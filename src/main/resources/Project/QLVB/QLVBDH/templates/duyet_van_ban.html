@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Quan ly cong viec{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/duyet_van_ban.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button active" id="duyetvb" href="{% url 'duyet_van_ban' %}">
+        <label>Duyệt văn bản</label>
+    </a>
+    <a class="combo-button" id="canphancong" href="{% url 'can_phan_cong' %}">
+        <label>Cần phân công</label>
+    </a>
+    <a class="combo-button{% if is_assigned_assignment_list %} active{% endif %}" id="daphancong" href="{% url 'da_phan_cong' %}">
+        <label>Đã phân công</label>
+    </a>
+    <a class="combo-button" id="theodoitiendo" href="{% url 'theo_doi_tien_do' %}">
+        <label>Theo dõi tiến độ</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div
+        class="approval-page"
+        data-approve-url-template="{% url 'duyet_van_ban_di_action' '__document_id__' %}"
+    >
+        <div class="search-bar">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tim theo so van ban, so ky hieu, trich yeu...">
+            </div>
+            <button class="btn-xem" type="button" id="search-button">Xem</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Ngày ban hành</th>
+                        <th>Số văn bản</th>
+                        <th>Loại văn bản</th>
+                        <th>Số ký hiệu</th>
+                        <th>trích yếu văn bản</th>
+                        <th>Cơ quan ban hành</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="approval-table-body">
+                    {% for document in documents %}
+                        <tr
+                            data-so-vb="{{ document.so_vb_di }}"
+                            data-ngay-ban-hanh="{% if document.ngay_ban_hanh %}{{ document.ngay_ban_hanh|date:'Y-m-d' }}{% endif %}"
+                            data-ngay-ban-hanh-display="{% if document.ngay_ban_hanh %}{{ document.ngay_ban_hanh|date:'d/m/Y' }}{% endif %}"
+                            data-loai-vb="{{ document.ma_loai_vb.ten_loai_vb }}"
+                            data-so-ky-hieu="{{ document.so_ky_hieu }}"
+                            data-trich-yeu="{{ document.trich_yeu }}"
+                            data-co-quan-ban-hanh="{{ co_quan_ban_hanh }}"
+                            data-tinh-trang="{{ document.approval_status }}"
+                            data-nguoi-soan="{{ document.nguoi_tao.ho_ten }}"
+                            data-nguoi-ky="{{ document.nguoi_ky_hien_thi }}"
+                            data-noi-nhan="{{ document.noi_nhan }}"
+                            data-ban-du-thao-name="{% if document.ban_du_thao %}{{ document.ban_du_thao.name|cut:'van_ban_di/du_thao/' }}{% endif %}"
+                            data-ban-du-thao-url="{% if document.ban_du_thao %}{{ document.ban_du_thao.url }}{% endif %}"
+                            data-current-step="{{ document.current_step }}"
+                            data-can-delegate="{% if document.can_delegate %}1{% else %}0{% endif %}"
+                            data-can-forward="{% if document.can_forward %}1{% else %}0{% endif %}"
+                            data-latest-revision-request="{{ document.latest_revision_request }}"
+                            data-latest-revision-author="{{ document.latest_revision_author }}"
+                        >
+                            <td class="text-center">{{ document.stt }}</td>
+                            <td class="text-center">{% if document.ngay_ban_hanh %}{{ document.ngay_ban_hanh|date:"d/m/Y" }}{% endif %}</td>
+                            <td class="text-center">{{ document.so_vb_di }}</td>
+                            <td>{{ document.ma_loai_vb.ten_loai_vb }}</td>
+                            <td>{{ document.so_ky_hieu }}</td>
+                            <td>{{ document.trich_yeu }}</td>
+                            <td>{{ co_quan_ban_hanh }}</td>
+                            <td class="text-center">
+                                <span class="status-badge {% if document.approval_status == 'Da duyet' %}status-done{% elif document.approval_status == 'Da uy quyen' %}status-review{% else %}status-pending{% endif %}" data-col="tinh-trang">
+                                    {{ document.approval_status }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="empty-state">Không có văn bản nào đang chờ duyệt.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="approval-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>CHI TIẾT DUYỆT VĂN BẢN</span>
+                <button type="button" class="close-btn" id="close-modal-btn">&times;</button>
+            </div>
+            <form class="modal-body" id="approval-form">
+                {% csrf_token %}
+                <input type="hidden" id="m-so-vb">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Số văn bản:</label>
+                        <input type="text" id="m-so-vb-display" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Ngày ban hành:</label>
+                        <input type="text" id="m-ngay-ban-hanh" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Loại văn bản:</label>
+                        <input type="text" id="m-loai-vb" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Số ký hiệu:</label>
+                        <input type="text" id="m-so-ky-hieu" readonly>
+                    </div>
+                </div>
+                <div class="form-group-full">
+                    <label>Trích yếu văn bản:</label>
+                    <textarea id="m-trich-yeu" rows="4" readonly></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cơ quan ban hành:</label>
+                        <input type="text" id="m-co-quan-ban-hanh" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Nơi nhận:</label>
+                        <input type="text" id="m-noi-nhan" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Người soạn thảo:</label>
+                        <input type="text" id="m-nguoi-soan" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Người ký:</label>
+                        <input type="text" id="m-nguoi-ky" readonly>
+                    </div>
+                </div>
+                <div class="form-group-full file-input">
+                    <label>Bản dự thảo:</label>
+                    <div class="file-input-wrapper">
+                        <a id="m-ban-du-thao-link" class="file-link disabled" href="#" target="_blank" rel="noopener noreferrer">
+                            <input type="text" id="m-ban-du-thao-name" readonly>
+                        </a>
+                        <span class="btn-icon">
+                            <i class="bi bi-file-earmark-break"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="form-group-full">
+                    <label>Yêu cầu chỉnh sửa gần nhất:</label>
+                    <textarea id="m-revision-request" rows="3" readonly></textarea>
+                </div>
+                <div class="form-group-full">
+                    <label>Người yêu cầu chỉnh sửa:</label>
+                    <input type="text" id="m-revision-author" readonly>
+                </div>
+                <div class="form-errors" id="modal-form-errors"></div>
+                <div class="modal-footer">
+                    <button type="button" id="btn-request-revision" class="btn-primary">Chỉnh sửa</button>
+                    <button type="button" id="btn-delegate" class="btn-primary">Ủy quyền</button>
+                    <button type="button" id="btn-approve" class="btn-success">Duyệt</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="revision-modal" class="modal-overlay">
+        <div class="modal-content small-modal-content">
+            <div class="modal-header">
+                <span>YÊU CẦU CHỈNH SỬA</span>
+                <button type="button" class="close-btn" id="close-revision-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="revision-text">Nội dung yêu cầu:</label>
+                <textarea id="revision-text" rows="5" placeholder="Nhập nội dung yêu cầu chỉnh sửa..."></textarea>
+                <div class="form-errors" id="revision-errors"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-primary" id="submit-revision-button">Gửi yêu cầu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="delegate-modal" class="modal-overlay">
+        <div class="modal-content small-modal-content">
+            <div class="modal-header">
+                <span>ỦY QUYỀN DUYỆT</span>
+                <button type="button" class="close-btn" id="close-delegate-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="delegate-id">Chọn phó hiệu truưởng:</label>
+                <select id="delegate-id">
+                    <option value="">Chọn người được ủy quyền</option>
+                    {% for giao_vien in pho_hieu_truong_list %}
+                        <option value="{{ giao_vien.pk }}">{{ giao_vien.ho_ten }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-errors" id="delegate-errors"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-primary" id="submit-delegate-button">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification-overlay" class="notification-overlay hidden">
+        <div class="notification-box">
+            <i class="bi bi-check-circle-fill"></i>
+            <p id="notification-message">Cập nhật thành công!</p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/duyet_van_ban.js' %}"></script>
+{% endblock %}

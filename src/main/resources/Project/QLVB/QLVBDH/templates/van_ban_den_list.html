@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Danh sach van ban den{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/van_ban_den_list.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button active" id="xemvbd" href="{% url 'danh_sach_van_ban_den' %}">
+        <label>Xem văn bản đến</label>
+    </a>
+    {% if can_manage_documents %}
+        <a class="combo-button" id="dkvbd" href="{% url 'dang_ky_van_ban_den' %}">
+            <label>Đăng ký văn bản đến</label>
+        </a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <div class="van-ban-page" data-can-manage="{% if can_manage_documents %}1{% else %}0{% endif %}">
+        <div class="search-bar">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tim theo so den, so ky hieu, trich yeu...">
+            </div>
+            <button class="btn-xem" type="button" id="search-button">Xem</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Số đến</th>
+                        <th>Ngày nhận</th>
+                        <th>Ngày ký</th>
+                        <th>Số ký hiệu</th>
+                        <th>Trích yếu văn bản</th>
+                        <th>Cơ quan ban hành</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="data-table-body">
+                    {% for document in documents %}
+                        <tr
+                            data-update-url="{% url 'cap_nhat_van_ban_den' document.so_vb_den %}"
+                            data-publish-url="{% url 'ban_hanh_noi_bo_van_ban_den' document.so_vb_den %}"
+                            data-so-den="{{ document.so_vb_den }}"
+                            data-trang-thai="{{ document.trang_thai_vb_den }}"
+                            data-da-ban-hanh-noi-bo="{% if document.da_ban_hanh_noi_bo %}1{% else %}0{% endif %}"
+                            data-ngay-nhan="{{ document.ngay_nhan|date:'d/m/Y' }}"
+                            data-ngay-ky="{{ document.ngay_ky|date:'d/m/Y' }}"
+                            data-so-ky-hieu="{{ document.so_ky_hieu }}"
+                            data-trich-yeu="{{ document.trich_yeu }}"
+                            data-co-quan="{{ document.co_quan_ban_hanh }}"
+                            data-loai-vb="{{ document.ma_loai_vb.ten_loai_vb }}"
+                            data-loai-vb-id="{{ document.ma_loai_vb_id }}"
+                            data-muc-do="{{ document.ma_muc_do.muc_do }}"
+                            data-muc-do-id="{{ document.ma_muc_do_id }}"
+                            data-file-name="{{ document.file_van_ban.name|cut:'van_ban_den/' }}"
+                            data-file-url="{% if document.file_van_ban %}{{ document.file_van_ban.url }}{% endif %}"
+                            data-attachments-json="{{ document.attachments_json|escape }}"
+                        >
+                            <td class="text-center" data-col="so-den">{{ document.so_vb_den }}</td>
+                            <td class="text-center" data-col="ngay-nhan">{{ document.ngay_nhan|date:"d/m/Y" }}</td>
+                            <td class="text-center" data-col="ngay-ky">{{ document.ngay_ky|date:"d/m/Y" }}</td>
+                            <td data-col="so-ky-hieu">{{ document.so_ky_hieu }}</td>
+                            <td data-col="trich-yeu">{{ document.trich_yeu }}</td>
+                            <td data-col="co-quan">{{ document.co_quan_ban_hanh }}</td>
+                            <td class="text-center" data-col="trang-thai">
+                                <span class="status-badge {{ document.status_css_class }}">{{ document.trang_thai_hien_thi }}</span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="empty-state">Chưa có văn bản đến nào.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="document-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span>CHI TIẾT VĂN BẢN ĐẾN</span>
+                    <button type="button" class="close-btn" id="close-modal-btn">&times;</button>
+                </div>
+                <form class="modal-body" id="document-edit-form">
+                    {% csrf_token %}
+                    <input type="hidden" id="update-url">
+                    <input type="hidden" id="publish-url">
+                    <input type="hidden" id="m-attachment-delete-ids" name="tep_dinh_kem_xoa_ids">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Số văn bản đến:</label>
+                            <input type="text" id="m-so-den" readonly placeholder="Số văn bản đến">
+                        </div>
+                        <div class="form-group">
+                            <label>Tình trạng:</label>
+                            <select id="m-trang-thai" name="trang_thai_vb_den" disabled>
+                                {% for status in document_status_choices %}
+                                    <option value="{{ status.value }}">{{ status.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ngày đến:</label>
+                            <input type="text" id="m-ngay-nhan" data-date-input name="ngay_nhan" readonly placeholder="Chọn ngày văn bản đến">
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày ký:</label>
+                            <input type="text" id="m-ngay-ky" data-date-input name="ngay_ky" readonly placeholder="chọn ngày ký văn bản">
+                        </div>
+                    </div>
+                    <div class="form-group-full">
+                        <label>Số ký hiệu văn bản:</label>
+                        <input type="text" id="m-so-ky-hieu" name="so_ky_hieu" readonly placeholder="Nhập số ký hiệu văn bản">
+                    </div>
+                    <div class="form-group-full">
+                        <label>Loại văn bản:</label>
+                        <select id="m-loai-vb" name="ma_loai_vb" disabled>
+                            {% for loai in loai_van_ban_list %}
+                                <option value="{{ loai.pk }}">{{ loai.ten_loai_vb }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group-full">
+                        <label>Mức độ ưu tiên:</label>
+                        <select id="m-muc-do" name="ma_muc_do" disabled>
+                            {% for muc_do in muc_do_list %}
+                                <option value="{{ muc_do.pk }}">{{ muc_do.muc_do }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group-full">
+                        <label>Cơ quan ban hành:</label>
+                        <input type="text" id="m-co-quan" name="co_quan_ban_hanh" readonly placeholder="Nhập cơ quan ban hành">
+                    </div>
+                    <div class="form-group-full">
+                        <label>Trích yếu:</label>
+                        <textarea id="m-trich-yeu" name="trich_yeu" rows="4" readonly placeholder="Nhập trích yếu văn bản"></textarea>
+                    </div>
+                    <div class="form-group-full file-input">
+                        <label>File văn bản:</label>
+                        <div class="file-input-wrapper view-only-file">
+                            <input type="file" id="m-file-upload" name="file_van_ban_uploads" class="hidden-file-input" accept=".pdf,.doc,.docx,image/*" multiple>
+                            <a id="m-file-link" class="file-link disabled" href="#" target="_blank" rel="noopener noreferrer">
+                                <input type="text" id="m-file-name" readonly>
+                            </a>
+                            <button type="button" id="m-file-upload-trigger" class="btn-icon file-link-icon" disabled aria-label="Tai tep moi">
+                                <i class="bi bi-file-earmark-break"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group-full">
+                        <label>Tep dinh kem:</label>
+                        <div class="attachment-list-view" id="m-attachment-list"></div>
+                        <div class="attachment-upload-row">
+                            <input type="file" id="m-attachment-upload" name="tep_dinh_kem_uploads" class="hidden-file-input" accept=".pdf,.doc,.docx,image/*" multiple>
+                            <button type="button" id="m-attachment-upload-trigger" class="btn-primary attachment-upload-trigger" disabled>Thêm tệp đính kèm</button>
+                        </div>
+                    </div>
+                    <div class="form-errors" id="modal-form-errors"></div>
+                    <div class="modal-footer">
+                        <button type="button" id="btn-publish" class="btn-success hidden">Ban hành nội bộ</button>
+                        <button type="button" id="btn-unpublish" class="btn-danger hidden">Ngừng ban hành</button>
+                        <button type="button" id="btn-edit" class="btn-primary{% if not can_manage_documents %} hidden{% endif %}">Chỉnh sửa</button>
+                        <div id="edit-actions" class="edit-actions hidden">
+                            <button type="submit" id="btn-save" class="btn-success">Lưu</button>
+                            <button type="button" id="btn-cancel" class="btn-danger">Hủy</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="notification-overlay" class="notification-overlay hidden">
+            <div class="notification-box">
+                <i class="bi bi-check-circle-fill"></i>
+                <p id="notification-message">Lưu thành công!</p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/van_ban_den_list.js' %}"></script>
+{% endblock %}

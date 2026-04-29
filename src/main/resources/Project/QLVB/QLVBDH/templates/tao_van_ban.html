@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tao van ban{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/tao_van_ban.css' %}">
+{% endblock %}
+
+{% block sidebar %}{% endblock %}
+
+{% block content %}
+    <div class="document-wrapper">
+        <div class="form-container">
+            <div class="form-group select-template-row" id="open-template-modal">
+                <i class="bi bi-hand-point-right"></i>
+                <label>Nhấn vào đây để chọn mẫu</label>
+            </div>
+
+            <form id="create-document-form" method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                <input type="hidden" id="selected-template-id">
+
+                <div class="form-group">
+                    <label for="so-van-ban-di">Số văn bản đi:</label>
+                    <div class="field-wrap">
+                        <input id="so-van-ban-di" type="text" value="{{ next_so_vb_di }}" readonly class="form-control bg-gray">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="loai-van-ban">Loại văn bản:</label>
+                    <div class="field-wrap">
+                        {{ form.ma_loai_vb }}
+                        {{ form.ma_loai_vb.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="muc-do-uu-tien">Mức độ ưu tiên:</label>
+                    <div class="field-wrap">
+                        {{ form.ma_muc_do }}
+                        {{ form.ma_muc_do.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="noi-nhan">Nơi nhận:</label>
+                    <div class="field-wrap">
+                        {{ form.noi_nhan }}
+                        {{ form.noi_nhan.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="trich-yeu">Trích yếu văn bản:</label>
+                    <div class="field-wrap">
+                        {{ form.trich_yeu }}
+                        {{ form.trich_yeu.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="draft-file-name">File dự thảo:</label>
+                    <div class="field-wrap">
+                        <div class="file-input-wrapper" id="draft-file-trigger">
+                            <input id="draft-file-name" type="text" value="Nhấn để tải file dự thảo" readonly class="form-control bg-gray">
+                            <button type="button" class="btn-icon" aria-label="Chon file du thao">
+                                <i class="bi bi-file-earmark-break"></i>
+                            </button>
+                        </div>
+                        {{ form.ban_du_thao_uploads }}
+                        {{ form.ban_du_thao_uploads.errors }}
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="page-feedback">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div class="form-actions">
+                    <button type="reset" class="btn-main btn-cancel" id="reset-form-btn">Hủy</button>
+                    <button type="submit" class="btn-main" id="submit-preview-btn">Trình duyệt</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="preview-container">
+            <div class="preview-header">
+                <h3>Xem trước văn bản</h3>
+                <p>Mẫu đã chọn hoặc file dự thảo sẽ hiển thị ở đây.</p>
+            </div>
+            <div class="preview-box">
+                <div id="preview-placeholder" class="preview-placeholder">Chưa có file để xem trước.</div>
+                <img id="preview-image" class="preview-element hidden" alt="Xem trước ảnh">
+                <iframe id="preview-pdf" class="preview-element hidden" title="Xem trước PDF"></iframe>
+                <div id="preview-message" class="preview-message hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="template-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>Mẫu văn bản</span>
+                <button type="button" class="modal-close" id="close-template-modal">&times;</button>
+            </div>
+            <div class="modal-table-wrap">
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Loại văn bản</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for template in template_list %}
+                            <tr
+                                data-template-id="{{ template.pk }}"
+                                data-template-name="{{ template.ten_mau }}"
+                                data-loai-vb-id="{{ template.ma_loai_vb_id }}"
+                                data-file-url="{% if template.file_mau %}{{ template.file_mau.url }}{% endif %}"
+                                data-file-name="{% if template.file_mau %}{{ template.file_mau.name|cut:'mau_van_ban/' }}{% endif %}"
+                            >
+                                <td>
+                                    {% if template.file_mau %}
+                                        <a class="template-file-link" href="{{ template.file_mau.url }}" download title="Tải {{ template.ten_mau }}">
+                                            {{ template.file_mau.name|cut:'mau_van_ban/' }}
+                                        </a>
+                                    {% else %}
+                                        {{ template.ten_mau }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ template.ma_loai_vb.ten_loai_vb }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="2" class="empty-state">Chưa có mẫu văn bản đang sử dụng.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/tao_van_ban.js' %}"></script>
+{% endblock %}

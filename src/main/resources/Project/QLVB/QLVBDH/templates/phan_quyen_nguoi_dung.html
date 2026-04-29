@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Phân quyền người dùng{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/quan_ly_tai_khoan.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button{% if is_account_user_list %} active{% endif %}" href="{% url 'danh_sach_nguoi_dung' %}">
+        <label>Danh sách người dùng</label>
+    </a>
+    <a class="combo-button{% if is_account_permission_list %} active{% endif %}" href="{% url 'phan_quyen_nguoi_dung' %}">
+        <label>Phân quyền người dùng</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div
+        class="account-page"
+        data-mode="permission-list"
+        data-permission-url-template="{% url 'cap_nhat_phan_quyen_nguoi_dung' '__teacher_id__' %}"
+        data-csrf-token="{{ csrf_token }}"
+    >
+        <div class="page-toolbar">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tìm theo họ tên, chức vụ, tổ, nhóm quyền...">
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Họ tên</th>
+                        <th>Chức vụ</th>
+                        <th>Tổ</th>
+                        <th>Nhóm quyền</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="teacher-table-body">
+                    {% for teacher in giao_vien_list %}
+                        <tr
+                            class="teacher-row"
+                            data-ma-gv="{{ teacher.ma_gv }}"
+                            data-ho-ten="{{ teacher.ho_ten }}"
+                            data-chuc-vu="{{ teacher.chuc_vu }}"
+                            data-to-chuyen-mon="{% if teacher.ma_to_id %}{{ teacher.ma_to.ten_to }}{% endif %}"
+                            data-group-names="{{ teacher.ten_nhom_quyen_hien_thi }}"
+                            data-group-ids="{% if teacher.user_id %}{% for group in teacher.user.groups.all %}{{ group.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% endif %}"
+                        >
+                            <td>{{ teacher.ho_ten }}</td>
+                            <td>{{ teacher.chuc_vu|default:"" }}</td>
+                            <td>{% if teacher.ma_to_id %}{{ teacher.ma_to.ten_to }}{% endif %}</td>
+                            <td class="teacher-group-display">{{ teacher.ten_nhom_quyen_hien_thi|default:"Chưa phân quyền" }}</td>
+                            <td class="text-center">
+                                <button class="btn-inline" type="button" data-open-permission>Phân quyền</button>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="5">Chưa có giáo viên nào.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="permission-modal" class="modal-overlay hidden">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <span>PHÂN QUYỀN NGƯỜI DÙNG</span>
+                    <button class="modal-close" type="button" data-close-modal="permission-modal">&#x2715;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="permission-summary">
+                        <p><strong>Mã giáo viên:</strong> <span id="permission-teacher-code"></span></p>
+                        <p><strong>Họ tên:</strong> <span id="permission-teacher-name"></span></p>
+                    </div>
+                    <div class="permission-grid">
+                        {% for group in group_list %}
+                            <label class="permission-option">
+                                <input type="checkbox" class="permission-checkbox" value="{{ group.id }}">
+                                <span>{{ group.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <div id="permission-modal-feedback" class="modal-feedback hidden"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-modal btn-luu" type="button" id="btn-save-permissions">Lưu phân quyền</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/quan_ly_tai_khoan.js' %}"></script>
+{% endblock %}

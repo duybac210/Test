@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Quản lý tài khoản{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/quan_ly_tai_khoan.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button{% if is_account_user_list %} active{% endif %}" href="{% url 'danh_sach_nguoi_dung' %}">
+        <label>Danh sách người dùng</label>
+    </a>
+    <a class="combo-button{% if is_account_permission_list %} active{% endif %}" href="{% url 'phan_quyen_nguoi_dung' %}">
+        <label>Phân quyền người dùng</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div
+        class="account-page"
+        data-mode="user-list"
+        data-create-url="{% url 'them_giao_vien' %}"
+        data-update-url-template="{% url 'cap_nhat_tai_khoan_giao_vien' '__teacher_id__' %}"
+        data-reset-url-template="{% url 'reset_mat_khau_giao_vien' '__teacher_id__' %}"
+        data-csrf-token="{{ csrf_token }}"
+    >
+        <div class="page-toolbar">
+            <button class="btn-inline btn-add-teacher" type="button" id="btn-open-create-teacher">
+                <i class="bi bi-person-plus-fill"></i>
+                <span>Thêm giáo viên</span>
+            </button>
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tìm theo họ tên, chức vụ, tổ chuyên môn...">
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Họ tên</th>
+                        <th>Chức vụ</th>
+                        <th>Tổ</th>
+                    </tr>
+                </thead>
+                <tbody id="teacher-table-body">
+                    {% for teacher in giao_vien_list %}
+                        {% include "partials/giao_vien_row.html" with teacher=teacher %}
+                    {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="3">Chưa có giáo viên nào.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="create-teacher-modal" class="modal-overlay hidden">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <span>THÊM GIÁO VIÊN</span>
+                    <button class="modal-close" type="button" data-close-modal="create-teacher-modal">&#x2715;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-form-group">
+                        <label for="create-ma-gv">Mã giáo viên:</label>
+                        <input type="text" id="create-ma-gv" class="modal-input">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="create-ho-ten">Tên giáo viên:</label>
+                        <input type="text" id="create-ho-ten" class="modal-input">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="create-chuc-vu">Chức vụ:</label>
+                        <input type="text" id="create-chuc-vu" class="modal-input">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="create-ma-to">Tổ chuyên môn:</label>
+                        <select id="create-ma-to" class="modal-input">
+                            <option value="">Chọn tổ chuyên môn</option>
+                            {% for to in to_chuyen_mon_list %}
+                                <option value="{{ to.ma_to }}">{{ to.ten_to }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="create-trang-thai">Trạng thái:</label>
+                        <select id="create-trang-thai" class="modal-input">
+                            {% for status in account_status_choices %}
+                                <option value="{{ status }}">{{ status }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="create-teacher-feedback" class="modal-feedback hidden"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-modal btn-luu" type="button" id="btn-save-create-teacher">Lưu</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="teacher-detail-modal" class="modal-overlay hidden">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <span>CHI TIẾT GIÁO VIÊN</span>
+                    <button class="modal-close" type="button" data-close-modal="teacher-detail-modal">&#x2715;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-form-group">
+                        <label for="detail-ma-gv">Mã giáo viên:</label>
+                        <input type="text" id="detail-ma-gv" class="modal-input bg-gray" readonly>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-ho-ten">Tên giáo viên:</label>
+                        <input type="text" id="detail-ho-ten" class="modal-input bg-gray" readonly>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-chuc-vu">Chức vụ:</label>
+                        <input type="text" id="detail-chuc-vu" class="modal-input bg-gray" readonly>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-to-text">Tổ chuyên môn:</label>
+                        <input type="text" id="detail-to-text" class="modal-input bg-gray" readonly>
+                        <select id="detail-to-select" class="modal-input hidden">
+                            <option value="">Chọn tổ chuyên môn</option>
+                            {% for to in to_chuyen_mon_list %}
+                                <option value="{{ to.ma_to }}">{{ to.ten_to }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-last-login">Lần cuối đăng nhập:</label>
+                        <input type="text" id="detail-last-login" class="modal-input bg-gray" readonly>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-trang-thai-text">Trạng thái:</label>
+                        <input type="text" id="detail-trang-thai-text" class="modal-input bg-gray" readonly>
+                        <select id="detail-trang-thai-select" class="modal-input hidden">
+                            {% for status in account_status_choices %}
+                                <option value="{{ status }}">{{ status }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="teacher-modal-feedback" class="modal-feedback hidden"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-modal btn-sua" type="button" id="btn-edit-teacher">Chỉnh sửa</button>
+                    <button class="btn-modal btn-luu hidden" type="button" id="btn-save-teacher">Lưu</button>
+                    <button class="btn-modal btn-reset" type="button" id="btn-open-reset-password">Reset mật khẩu</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="reset-password-modal" class="modal-overlay hidden">
+            <div class="modal-box modal-box-sm">
+                <div class="modal-header">
+                    <span>RESET MẬT KHẨU</span>
+                    <button class="modal-close" type="button" data-close-modal="reset-password-modal">&#x2715;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-form-group">
+                        <label for="reset-password">Nhập mật khẩu:</label>
+                        <input type="password" id="reset-password" class="modal-input">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="reset-confirm-password">Nhập lại mật khẩu:</label>
+                        <input type="password" id="reset-confirm-password" class="modal-input">
+                    </div>
+                    <div id="reset-modal-feedback" class="modal-feedback hidden"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-modal btn-luu" type="button" id="btn-confirm-reset-password">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/quan_ly_tai_khoan.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,18 @@
+@import url("duyet_van_ban.css");
+
+#vanbanxuly,
+#vanbantralai {
+    border-radius: 0;
+    padding: 10px;
+}
+
+#vanbanxuly:hover,
+#vanbantralai:hover,
+#vanbanxuly.active,
+#vanbantralai.active {
+    border-radius: 0;
+}
+
+.upload-trigger {
+    cursor: pointer;
+}

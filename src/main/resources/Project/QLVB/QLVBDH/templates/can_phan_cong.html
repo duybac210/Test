@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Phan cong xu ly{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/can_phan_cong.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button" id="duyetvb" href="{% url 'duyet_van_ban' %}">
+        <label>Duyệt văn bản</label>
+    </a>
+    <a class="combo-button{% if is_pending_assignment_list %} active{% endif %}" id="canphancong" href="{% url 'can_phan_cong' %}">
+        <label>Cần phân công</label>
+    </a>
+    <a class="combo-button{% if is_assigned_assignment_list %} active{% endif %}" id="daphancong" href="{% url 'da_phan_cong' %}">
+        <label>Đã phân công</label>
+    </a>
+    <a class="combo-button{% if is_progress_tracking_list %} active{% endif %}" id="theodoitiendo" href="{% url 'theo_doi_tien_do' %}">
+        <label>Theo dõi tiến độ</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="assignment-page" data-save-url="{% url 'luu_phan_cong_xu_ly' %}">
+        {% csrf_token %}
+        <div class="search-bar">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tim theo so van ban, so ky hieu, trich yeu...">
+            </div>
+            <button class="btn-xem" type="button" id="search-button">Xem</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table-custom" id="assignment-table">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Ngày ban hành</th>
+                        <th>Số văn bản</th>
+                        <th>Loại văn bản</th>
+                        <th>Số ký hiệu</th>
+                        <th>Trích yếu văn bản</th>
+                        <th>Người soạn/ cơ quan ban hành</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="data-table-body">
+                    {% for document in documents %}
+                        <tr
+                            data-loai="{{ document.loai }}"
+                            data-record-id="{{ document.record_id }}"
+                            data-ngay="{{ document.thoi_gian_display }}"
+                            data-so-van-ban="{{ document.so_van_ban }}"
+                            data-ky-hieu="{{ document.so_ky_hieu }}"
+                            data-loai-vb="{{ document.ten_loai_vb }}"
+                            data-co-quan="{{ document.co_quan_ban_hanh }}"
+                            data-trich-yeu="{{ document.trich_yeu }}"
+                            data-file-name="{{ document.file_name }}"
+                            data-file-url="{{ document.file_url }}"
+                            data-noi-dung-cd="{{ document.noi_dung_cd }}"
+                            data-thoi-han="{{ document.thoi_han }}"
+                            data-assigned-ids="{{ document.assigned_ids|join:',' }}"
+                            data-assignment-details="{{ document.assignment_details_json|escapejs }}"
+                        >
+                            <td class="text-center">{{ document.stt }}</td>
+                            <td>{{ document.thoi_gian_display }}</td>
+                            <td>{{ document.so_van_ban }}</td>
+                            <td>{{ document.ten_loai_vb }}</td>
+                            <td>{{ document.so_ky_hieu }}</td>
+                            <td>{{ document.trich_yeu }}</td>
+                            <td>{{ document.co_quan_ban_hanh }}</td>
+                            <td class="text-center">
+                                <span class="status-badge{% if is_assigned_assignment_list %} assigned{% endif %}">
+                                    {% if is_assigned_assignment_list %}Da phan cong{% else %}Chua phan cong{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="empty-state">
+                                {% if is_assigned_assignment_list %}
+                                    Không có văn bản nào đã phân công.
+                                {% else %}
+                                    Không có vaăn bản nào cần phân công.
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>CHI TIET VAN BAN</span>
+                <span class="close-btn" id="close-detail-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="m-record-id">
+                <input type="hidden" id="m-loai-record">
+                <div class="field"><label>Ngày ban hành:</label><input type="text" id="m-ngay" readonly></div>
+                <div class="field"><label>Số văn bản:</label><input type="text" id="m-sovanban" readonly></div>
+                <div class="field"><label>Số ký hệu văn bản:</label><input type="text" id="m-kyhieu" readonly></div>
+                <div class="field"><label>Loại văn bản:</label><input type="text" id="m-loai" readonly></div>
+                <div class="field"><label>Cơ quan ban hành:</label><input type="text" id="m-coquan" readonly></div>
+                <div class="field"><label>Trích yếu:</label><textarea id="m-trichyeu" rows="2" readonly></textarea></div>
+                <div class="field">
+                    <label>File văn bản:</label>
+                    <div class="file-group">
+                        <a id="m-file-link" class="file-link disabled" href="#" target="_blank" rel="noopener noreferrer">
+                            <input type="text" id="m-file" readonly>
+                        </a>
+                        <button class="btn-scan" type="button" id="m-file-preview"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Đơn vị/ cá nhân xử lý:</label>
+                    <div class="selector-group">
+                        <input type="text" id="m-donvi-display" readonly placeholder="Chưa chọn người xử lý">
+                        {% if not is_assigned_assignment_list %}
+                            <button class="btn-select-people" type="button" id="open-people-modal">Chọn</button>
+                        {% endif %}
+                    </div>
+                    <select id="m-donvi" multiple hidden>
+                        {% for giao_vien in giao_vien_list %}
+                            <option value="{{ giao_vien.pk }}">{{ giao_vien.ho_ten }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Thời hạn xử lý:</label>
+                    <input type="date" id="m-hanhoanthanh" {% if is_assigned_assignment_list %}readonly{% endif %}>
+                </div>
+                <div class="form-errors" id="modal-errors"></div>
+            </div>
+            {% if not is_assigned_assignment_list %}
+                <div class="modal-footer">
+                    <button class="btn-action" type="button" id="open-confirm-button">Phân công</button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal-overlay">
+        <div class="confirm-box">
+            <div class="check-icon"><i class="fas fa-check-circle"></i></div>
+            <h3>Xac nhan phan cong</h3>
+            <div class="confirm-footer">
+                <button class="btn-cancel" type="button" id="cancel-confirm-button">Huy</button>
+                <button class="btn-accept" type="button" id="accept-confirm-button">Chap nhan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="peopleModal" class="modal-overlay">
+        <div class="people-modal-content">
+            <div class="modal-header">
+                <span>CHON NGUOI XU LY</span>
+                <span class="close-btn" id="close-people-modal">&times;</span>
+            </div>
+            <div class="people-modal-body">
+                <div class="people-search">
+                    <input type="text" id="people-search-input" placeholder="Tim theo ten hoac chuc vu">
+                </div>
+                <div class="people-list" id="people-list">
+                    {% for giao_vien in giao_vien_list %}
+                        <div class="people-item" data-search="{{ giao_vien.ho_ten|lower }} {{ giao_vien.chuc_vu|default:''|lower }}">
+                            <label class="people-select">
+                                <input
+                                    type="checkbox"
+                                    class="people-checkbox"
+                                    value="{{ giao_vien.pk }}"
+                                    data-name="{{ giao_vien.ho_ten }}"
+                                >
+                            </label>
+                            <div class="people-info">
+                                <span class="people-name">{{ giao_vien.ho_ten }}</span>
+                                <span class="people-role">{{ giao_vien.chuc_vu|default:"Giao vien" }}</span>
+                            </div>
+                            <div class="people-instruction">
+                                <input
+                                    type="text"
+                                    class="people-instruction-input"
+                                    data-person-id="{{ giao_vien.pk }}"
+                                    placeholder="Nhap noi dung chi dao cho nguoi nay"
+                                >
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="empty-people">Khong co giao vien de chon.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" type="button" id="cancel-people-button">Huy</button>
+                <button class="btn-accept" type="button" id="accept-people-button">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="previewModal" class="modal-overlay">
+        <div class="preview-modal-content">
+            <div class="modal-header">
+                <span>XEM VAN BAN</span>
+                <span class="close-btn" id="close-preview-modal">&times;</span>
+            </div>
+            <div class="preview-body">
+                <div id="preview-placeholder" class="preview-placeholder">Chua co file de xem truoc.</div>
+                <img id="preview-image" class="preview-element hidden" alt="Xem truoc anh">
+                <iframe id="preview-pdf" class="preview-element hidden" title="Xem truoc file"></iframe>
+                <div id="preview-word" class="preview-element preview-word hidden"></div>
+                <div id="preview-message" class="preview-message hidden"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script>
+        window.forceOpenAssignmentDetail = function (row) {
+            if (!row) {
+                return;
+            }
+            const modal = document.getElementById("detailModal");
+            if (!modal) {
+                return;
+            }
+            const setValue = function (id, value) {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.value = value || "";
+                }
+            };
+            setValue("m-record-id", row.dataset.recordId);
+            setValue("m-loai-record", row.dataset.loai);
+            setValue("m-ngay", row.dataset.ngay);
+            setValue("m-sovanban", row.dataset.soVanBan);
+            setValue("m-kyhieu", row.dataset.kyHieu);
+            setValue("m-loai", row.dataset.loaiVb);
+            setValue("m-coquan", row.dataset.coQuan);
+            setValue("m-trichyeu", row.dataset.trichYeu);
+            setValue("m-file", row.dataset.fileName);
+            setValue("m-hanhoanthanh", row.dataset.thoiHan);
+
+            const fileLink = document.getElementById("m-file-link");
+            if (fileLink) {
+                if (row.dataset.fileUrl) {
+                    fileLink.href = row.dataset.fileUrl;
+                    fileLink.classList.remove("disabled");
+                } else {
+                    fileLink.href = "#";
+                    fileLink.classList.add("disabled");
+                }
+            }
+
+            const assignedIds = new Set((row.dataset.assignedIds || "").split(",").filter(Boolean));
+            const select = document.getElementById("m-donvi");
+            if (select) {
+                Array.from(select.options).forEach(function (option) {
+                    option.selected = assignedIds.has(option.value);
+                });
+            }
+
+            const checkboxes = document.querySelectorAll(".people-checkbox");
+            const names = [];
+            checkboxes.forEach(function (checkbox) {
+                const checked = assignedIds.has(checkbox.value);
+                checkbox.checked = checked;
+                if (checked) {
+                    names.push(checkbox.dataset.name);
+                }
+            });
+
+            const display = document.getElementById("m-donvi-display");
+            if (display) {
+                display.value = names.join(", ");
+                display.placeholder = names.length ? "" : "Chua chon nguoi xu ly";
+            }
+
+            const errorBox = document.getElementById("modal-errors");
+            if (errorBox) {
+                errorBox.textContent = "";
+            }
+
+            modal.classList.add("show");
+        };
+    </script>
+    <script src="{% static 'js/can_phan_cong.js' %}"></script>
+{% endblock %}

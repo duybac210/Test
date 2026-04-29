@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Sequential Suite" parallel="none">
+    <test name="Registration Tests">
+        <classes>
+            <class name="testcases.TC_DangKyVanBanDi"/>
+        </classes>
+    </test>
+</suite>

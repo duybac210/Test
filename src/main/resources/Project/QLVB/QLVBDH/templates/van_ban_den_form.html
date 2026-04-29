@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dang ky van ban den{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/van_ban_den_form.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button" id="xemvbd" href="{% url 'danh_sach_van_ban_den' %}">
+        <label>Xem văn bản đến</label>
+    </a>
+    <a class="combo-button active" id="dkvbd" href="{% url 'dang_ky_van_ban_den' %}">
+        <label>Đăng ký văn bản đến</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="document-wrapper">
+        <form class="form-container" method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div class="form-row">
+                <div class="form-group inline">
+                    <label for="auto_so_vb_den">Số văn bản đến:</label>
+                    <div class="field-control">
+                        <input id="auto_so_vb_den" type="text" value="{{ next_so_vb_den }}" readonly class="form-control bg-gray">
+                    </div>
+                </div>
+                <div class="form-group inline">
+                    <label for="auto_trang_thai">Trạng thái:</label>
+                    <div class="field-control">
+                        <input id="auto_trang_thai" type="text" value="{{ default_trang_thai }}" readonly class="form-control bg-gray">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.ngay_nhan.id_for_label }}">{{ form.ngay_nhan.label }}:</label>
+                    <div class="field-control">
+                        {{ form.ngay_nhan }}
+                        {{ form.ngay_nhan.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.ngay_ky.id_for_label }}">{{ form.ngay_ky.label }}:</label>
+                    <div class="field-control">
+                        {{ form.ngay_ky }}
+                        {{ form.ngay_ky.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.so_ky_hieu.id_for_label }}">{{ form.so_ky_hieu.label }}:</label>
+                    <div class="field-control">
+                        {{ form.so_ky_hieu }}
+                        {{ form.so_ky_hieu.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.ma_loai_vb.id_for_label }}">{{ form.ma_loai_vb.label }}:</label>
+                    <div class="field-control">
+                        {{ form.ma_loai_vb }}
+                        {{ form.ma_loai_vb.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.ma_muc_do.id_for_label }}">{{ form.ma_muc_do.label }}:</label>
+                    <div class="field-control">
+                        {{ form.ma_muc_do }}
+                        {{ form.ma_muc_do.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.co_quan_ban_hanh.id_for_label }}">{{ form.co_quan_ban_hanh.label }}:</label>
+                    <div class="field-control">
+                        {{ form.co_quan_ban_hanh }}
+                        {{ form.co_quan_ban_hanh.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="{{ form.trich_yeu.id_for_label }}">{{ form.trich_yeu.label }}:</label>
+                    <div class="field-control">
+                        {{ form.trich_yeu }}
+                        {{ form.trich_yeu.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="{{ form.file_van_ban.id_for_label }}">{{ form.file_van_ban.label }}:</label>
+                    <div class="field-control">
+                        {{ form.file_van_ban }}
+                        <div class="file-input-wrapper" data-primary-file-trigger>
+                            <input
+                                type="text"
+                                value="Nhấn vào biểu tượng để tải tệp lên"
+                                readonly
+                                class="form-control bg-gray"
+                                id="selected-file-name"
+                            >
+                            <button type="button" class="btn-icon" id="trigger-file-button" aria-label="Tai tep van ban">
+                                <i class="bi bi-file-earmark-break"></i>
+                            </button>
+                        </div>
+                        {{ form.file_van_ban.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="{{ form.tep_dinh_kem_uploads.id_for_label }}">Tệp đính kèm:</label>
+                    <div class="field-control">
+                        {{ form.tep_dinh_kem_uploads }}
+                        <button type="button" class="btn-main btn-secondary btn-attachment-trigger" id="trigger-attachment-button">
+                            Thêm tệp đính kèm
+                        </button>
+                        {{ form.tep_dinh_kem_uploads.errors }}
+                        <div class="attachment-list hidden" id="attachment-list-wrapper">
+                            <div class="attachment-list-title">Danh sách tệp đính kèm</div>
+                            <div id="attachment-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="reset" class="btn-main btn-cancel">Hủy</button>
+                <button type="submit" class="btn-main">Lưu</button>
+            </div>
+        </form>
+
+        <div class="preview-container">
+            <div class="preview-header">
+                <h3>Xem trước văn bản</h3>
+                <p>Khung chính thức chỉ hiện văn bản chính thức.</p>
+            </div>
+            <div class="preview-box" id="preview-box">
+                <div class="preview-placeholder" id="preview-placeholder">
+                    Chưa có tệp nào được chọn.
+                </div>
+                <img src="" alt="Xem truoc anh scan" id="preview-image" class="preview-element hidden">
+                <iframe id="preview-pdf" class="preview-element hidden" title="Xem truoc PDF"></iframe>
+                <div id="preview-word" class="preview-element preview-word hidden"></div>
+                <div id="preview-message" class="preview-element preview-message hidden"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script src="{% static 'js/van_ban_den_form.js' %}"></script>
+{% endblock %}

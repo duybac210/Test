@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Theo dõi tình trạng{% endblock %}
+
+{% block content %}
+    <div class="dashboard-container">
+        {% for card in dashboard_cards %}
+            <div class="card">
+                <div class="card-header {{ card.header_class }}">{{ card.title }}</div>
+                <div class="card-content">
+                    {% for label, value in card.items %}
+                        <div class="item">
+                            <span>{{ label }}</span>
+                            <span class="badge">{{ value }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

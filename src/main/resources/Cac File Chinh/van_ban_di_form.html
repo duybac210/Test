@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dang ky van ban di{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/van_ban_di_form.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button" id="xemvbd" href="{% url 'danh_sach_van_ban_di' %}">
+        <label>Xem văn bản đi</label>
+    </a>
+    <a class="combo-button active" id="dkvbd" href="{{ registration_page_url }}">
+        <label>Đăng ký văn bản đi</label>
+    </a>
+    <a class="combo-button" id="phbng" href="{% url 'van_ban_phat_hanh_ben_ngoai' %}">
+        <label>Phat hành bên ngoài</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="document-wrapper">
+        <form class="form-container" method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div class="form-row">
+                <div class="form-group inline">
+                    <label for="display_so_vb_di">Số văn bản đi:</label>
+                    <div class="field-control">
+                        <input id="display_so_vb_di" type="text" value="{{ document.so_vb_di }}" readonly class="form-control bg-gray">
+                    </div>
+                </div>
+                <div class="form-group inline">
+                    <label for="display_trang_thai">Tranng thái:</label>
+                    <div class="field-control">
+                        <input id="display_trang_thai" type="text" value="{{ document.trang_thai_vb_di }}" readonly class="form-control bg-gray">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="display_ngay_ban_hanh">Ngày ban hành:</label>
+                    <div class="field-control">
+                        <input id="display_ngay_ban_hanh" type="text" value="{% if document.ngay_ban_hanh %}{{ document.ngay_ban_hanh|date:'d/m/Y' }}{% endif %}" readonly class="form-control bg-gray">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.ngay_ky.id_for_label }}">Ngày ký văn bản:</label>
+                    <div class="field-control">
+                        {{ form.ngay_ky }}
+                        {{ form.ngay_ky.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="display_loai_vb">Loại văn bản:</label>
+                    <div class="field-control">
+                        {% if is_new_registration %}
+                            {{ form.ma_loai_vb }}
+                            {{ form.ma_loai_vb.errors }}
+                        {% else %}
+                            <input id="display_loai_vb" type="text" value="{{ document.ma_loai_vb.ten_loai_vb }}" readonly class="form-control bg-gray">
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="display_muc_do">Mức độ ưu tiên:</label>
+                    <div class="field-control">
+                        {{ form.ma_muc_do }}
+                        {{ form.ma_muc_do.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="display_nguoi_tao">Người soạn thảo:</label>
+                    <div class="field-control">
+                        {% if is_new_registration %}
+                            {{ form.nguoi_tao }}
+                            {{ form.nguoi_tao.errors }}
+                        {% else %}
+                            <input id="display_nguoi_tao" type="text" value="{{ document.nguoi_tao.ho_ten }}" readonly class="form-control bg-gray">
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="display_nguoi_ky">Người ký:</label>
+                    <div class="field-control">
+                        {% if is_new_registration %}
+                            {{ form.nguoi_ky }}
+                            {{ form.nguoi_ky.errors }}
+                        {% else %}
+                            <input id="display_nguoi_ky" type="text" value="{{ document.nguoi_ky_hien_thi|default:document.nguoi_ky.ho_ten }}" readonly class="form-control bg-gray">
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="display_noi_nhan">Nơi ký:</label>
+                    <div class="field-control">
+                        {{ form.noi_nhan }}
+                        {{ form.noi_nhan.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.so_ky_hieu.id_for_label }}">Số ký hiệu văn bản:</label>
+                    <div class="field-control cap-so-field">
+                        {{ form.so_ky_hieu }}
+                        <button type="button" class="btn-main btn-cap-so{% if not can_register or is_new_registration %} hidden{% endif %}" id="btn-cap-so">Cap so</button>
+                        {{ form.so_ky_hieu.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="display_trich_yeu">Trích yếu:</label>
+                    <div class="field-control">
+                        {{ form.trich_yeu }}
+                        {{ form.trich_yeu.errors }}
+                    </div>
+                </div>
+
+                {% if show_draft_file %}
+                    <div class="form-group form-group-full">
+                        <label>File dự thảo hiện có:</label>
+                        <div class="field-control">
+                            {% with draft_attachments=document.get_draft_attachments %}
+                                {% if draft_attachments %}
+                                    <div class="file-input-wrapper">
+                                        <a class="file-display-link" href="{{ draft_attachments.0.tep_tin.url }}" target="_blank" rel="noopener noreferrer">
+                                            <input id="draft_file_name" type="text" value="{{ draft_attachments.0.tep_tin.name|cut:'van_ban_di/du_thao/' }}" readonly class="form-control bg-gray">
+                                        </a>
+                                        <button type="button" class="btn-icon" disabled aria-label="Mở file dự thảo">
+                                            <i class="bi bi-file-earmark-break"></i>
+                                        </button>
+                                    </div>
+                                    <div class="existing-attachments">
+                                        {% for attachment in draft_attachments %}
+                                            <a href="{{ attachment.tep_tin.url }}" target="_blank" rel="noopener noreferrer">{{ attachment.tep_tin.name|cut:'van_ban_di/du_thao/' }}</a>
+                                        {% endfor %}
+                                    </div>
+                                {% elif document.ban_du_thao %}
+                                    <div class="file-input-wrapper">
+                                        <a class="file-display-link" href="{{ document.ban_du_thao.url }}" target="_blank" rel="noopener noreferrer">
+                                            <input id="draft_file_name" type="text" value="{{ document.ban_du_thao.name|cut:'van_ban_di/du_thao/' }}" readonly class="form-control bg-gray">
+                                        </a>
+                                        <button type="button" class="btn-icon" disabled aria-label="Mở file dự thảo">
+                                            <i class="bi bi-file-earmark-break"></i>
+                                        </button>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="form-group form-group-full">
+                    <label for="{{ form.ban_chinh_thuc.id_for_label }}">File chính thức:</label>
+                    <div class="field-control">
+                        {{ form.ban_chinh_thuc }}
+                        <div class="file-input-wrapper{% if not can_register %} disabled-wrapper{% endif %}" data-primary-file-trigger>
+                            <input type="text" value="{% if document.ban_chinh_thuc %}{{ document.ban_chinh_thuc.name|cut:'van_ban_di/chinh_thuc/' }}{% else %}Nhan vao bieu tuong de tai 1 tep chinh thuc{% endif %}" readonly class="form-control bg-gray" id="selected-file-name">
+                            <button type="button" class="btn-icon" id="trigger-file-button" aria-label="Tai tep" {% if not can_register %}disabled{% endif %}>
+                                <i class="bi bi-file-earmark-break"></i>
+                            </button>
+                        </div>
+                        {{ form.ban_chinh_thuc.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="{{ form.tep_dinh_kem_uploads.id_for_label }}">Tệp đính kèm:</label>
+                    <div class="field-control">
+                        {{ form.tep_dinh_kem_uploads }}
+                        <button
+                            type="button"
+                            class="btn-main btn-secondary btn-attachment-trigger"
+                            id="trigger-attachment-button"
+                            {% if not can_register %}disabled{% endif %}
+                        >
+                            Thêm tệp đính kèm
+                        </button>
+                        {{ form.tep_dinh_kem_uploads.errors }}
+                        {% if document.pk %}
+                            {% with official_attachments=document.get_official_attachments %}
+                                {% if official_attachments|length > 1 %}
+                                    <div class="existing-attachments">
+                                        {% for attachment in official_attachments|slice:"1:" %}
+                                            <a href="{{ attachment.tep_tin.url }}" target="_blank" rel="noopener noreferrer">{{ attachment.tep_tin.name|cut:'van_ban_di/chinh_thuc/' }}</a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                        <div class="attachment-list hidden" id="attachment-list-wrapper">
+                            <div class="attachment-list-title">Danh saách tệp đính kèm</div>
+                            <div id="attachment-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-actions">
+                {% if can_register %}
+                <button type="reset" class="btn-main btn-cancel">Hủy</button>
+                <button type="submit" class="btn-main">Lưu</button>
+                {% endif %}
+                {% if can_external_publish %}
+                    <button
+                        type="button"
+                        class="btn-main btn-secondary"
+                        id="btn-phat-hanh-ben-ngoai"
+                        data-publish-url="{% url 'phat_hanh_ben_ngoai_van_ban_di' document.so_vb_di %}"
+                    >
+                        Phát hành beên ngoài
+                    </button>
+                {% endif %}
+                {% if can_internal_publish %}
+                    <button
+                        type="button"
+                        class="btn-main btn-secondary"
+                        id="btn-ban-hanh-noi-bo"
+                        data-publish-url="{% url 'ban_hanh_noi_bo_van_ban_di' document.so_vb_di %}"
+                    >
+                        {% if document.da_ban_hanh_noi_bo %}Ngưng ban hành{% else %}Ban hành nội bộ{% endif %}
+                    </button>
+                {% endif %}
+                {% if can_send_assignment %}
+                    <button
+                        type="button"
+                        class="btn-main btn-secondary"
+                        id="btn-luan-chuyen"
+                        data-transfer-url="{% url 'luan_chuyen_van_ban_di' document.so_vb_di %}"
+                    >
+                        Luân chuyển
+                    </button>
+                {% endif %}
+            </div>
+        </form>
+
+        <div class="preview-container">
+            <div class="preview-header">
+                <h3>Xem trước văn bản</h3>
+                <p>Khung xem trước chỉ hiển thị file chính thức.</p>
+            </div>
+            <div class="preview-box" id="preview-box">
+                <div class="preview-placeholder" id="preview-placeholder">
+                    {% if show_draft_file %}
+                        Chưa có tệp được chọn.
+                    {% else %}
+                        Chưa có tệp chính thức nào được chọn.
+                    {% endif %}
+                </div>
+                <img src="" alt="Xem trước ảnh scan" id="preview-image" class="preview-element hidden">
+                <iframe id="preview-pdf" class="preview-element hidden" title="Xem trước PDF"></iframe>
+                <div id="preview-word" class="preview-element preview-word hidden"></div>
+                <div id="preview-message" class="preview-element preview-message hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="recipient-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>CHỌN NƠI PHÁT HÀNH BÊN NGOÀI</span>
+                <button class="modal-close" type="button" id="close-recipient-modal">&#x2715;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-form-group">
+                    <label for="dispatch-operator-name">Nguoi thuc hien:</label>
+                    <input type="text" id="dispatch-operator-name" class="modal-input bg-gray" value="{{ display_ho_ten }}" readonly>
+                </div>
+                <div class="modal-form-group">
+                    <label for="dispatch-note">Ghi chu:</label>
+                    <textarea id="dispatch-note" class="modal-input" rows="3" placeholder="Nhap ghi chu phat hanh ben ngoai"></textarea>
+                </div>
+                <div class="search-input-wrapper recipient-search">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" id="recipient-search-input" placeholder="Tim theo ten noi nhan, dia chi, SDT, gmail...">
+                </div>
+                <div class="recipient-list" id="recipient-list">
+                    {% for recipient in recipient_list %}
+                        <label class="recipient-item" data-search="{{ recipient.ten_noi_nhan|lower }} {{ recipient.dia_chi|lower }} {{ recipient.so_dien_thoai|lower }} {{ recipient.gmail|lower }}">
+                            <input type="checkbox" class="recipient-checkbox" value="{{ recipient.ma_noi_nhan }}">
+                            <span class="recipient-name">{{ recipient.ten_noi_nhan }}</span>
+                            <span class="recipient-meta">
+                                {{ recipient.dia_chi }}{% if recipient.so_dien_thoai %} - {{ recipient.so_dien_thoai }}{% endif %}
+                            </span>
+                        </label>
+                    {% empty %}
+                        <div class="empty-state">Chua co noi nhan nao.</div>
+                    {% endfor %}
+                </div>
+                <div class="form-errors" id="recipient-form-errors"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-luu" type="button" id="btn-submit-recipient-selection">Xac nhan</button>
+            </div>
+        </div>
+    </div>
+
+    {% if not is_new_registration %}
+        <input type="hidden" id="cap-so-url" value="{% url 'cap_so_van_ban_di' document.so_vb_di %}">
+    {% endif %}
+    <input type="hidden" id="csrf-token" value="{{ csrf_token }}">
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script src="{% static 'js/van_ban_di_form.js' %}"></script>
+{% endblock %}

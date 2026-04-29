@@ -1,0 +1,41 @@
+.status-badge.status-received {
+    background-color: #f2994a;
+    color: #fff;
+}
+
+.status-badge.status-processing {
+    background-color: #f2c94c;
+    color: #333;
+}
+
+.status-badge.status-complete {
+    background-color: #27ae60;
+    color: #fff;
+}
+
+.progress-modal-content {
+    width: min(980px, 100%);
+}
+
+.progress-details-section {
+    margin-top: 16px;
+}
+
+.progress-section-title {
+    margin-bottom: 10px;
+    color: #1b4e7b;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.detail-table-wrapper {
+    border: 1px solid #dee2e6;
+}
+
+.detail-table tbody tr {
+    cursor: default;
+}
+
+.detail-table tbody tr:hover {
+    background-color: #fff;
+}

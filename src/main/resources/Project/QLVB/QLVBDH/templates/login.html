@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống quản lý văn bản điều hành - Trường THPT Nguyễn Dục</title>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <script src="{% static 'js/login.js' %}" defer></script>
+</head>
+<body>
+    <div class="container">
+        <div class="info-section">
+            <div class="logo-placeholder">
+                <img src="{% static 'picture/logo.png' %}" alt="logo">
+            </div>
+            <h4>TRƯỜNG THPT NGUYỄN DỤC</h4>
+            <h1>HỆ THỐNG QUẢN LÝ VĂN BẢN ĐIỀU HÀNH</h1>
+            <div class="support-info">
+                <p>Hỗ trợ: 0973354367</p>
+                <p>---------------------------------------------------------------------</p>
+                <p>Group 3 class 49k14.1</p>
+                <p>---------------------------------------------------------------------</p>
+            </div>
+        </div>
+
+        <div class="login-section">
+            <div class="login-form-container">
+                <h4>Đăng nhập vào hệ thống</h4>
+
+                {% if messages %}
+                    <div class="message-list">
+                        {% for message in messages %}
+                            <div class="message {{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form class="login-form" id="loginForm" method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next_url }}">
+
+                    <div class="form-group">
+                        <label for="username">Tên đăng nhập</label>
+                        <input type="text" id="username" name="username" placeholder="tên đăng nhập" autocomplete="username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Mật khẩu</label>
+                        <input type="password" id="password" name="password" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
+                    </div>
+                    <button type="submit" class="login-btn">ĐĂNG NHẬP</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

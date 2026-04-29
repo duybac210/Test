@@ -1,0 +1,14 @@
+<tr
+    class="teacher-row"
+    data-ma-gv="{{ teacher.ma_gv }}"
+    data-ho-ten="{{ teacher.ho_ten }}"
+    data-chuc-vu="{{ teacher.chuc_vu }}"
+    data-ma-to="{% if teacher.ma_to_id %}{{ teacher.ma_to_id }}{% endif %}"
+    data-to-chuyen-mon="{% if teacher.ma_to_id %}{{ teacher.ma_to.ten_to }}{% endif %}"
+    data-last-login="{% if teacher.user_id and teacher.user.last_login %}{{ teacher.user.last_login|date:'d/m/Y H:i' }}{% else %}Chua dang nhap{% endif %}"
+    data-trang-thai="{{ teacher.trang_thai_tk }}"
+>
+    <td>{{ teacher.ho_ten }}</td>
+    <td>{{ teacher.chuc_vu|default:"" }}</td>
+    <td>{% if teacher.ma_to_id %}{{ teacher.ma_to.ten_to }}{% endif %}</td>
+</tr>

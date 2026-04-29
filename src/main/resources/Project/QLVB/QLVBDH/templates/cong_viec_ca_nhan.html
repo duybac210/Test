@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cong viec ca nhan{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/cong_viec_ca_nhan.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button{% if is_personal_processing_list %} active{% endif %}" id="vanbanxuly" href="{% url 'van_ban_xu_ly_ca_nhan' %}">
+        <label>Văn bản xử lý</label>
+    </a>
+    <a class="combo-button{% if is_personal_returned_list %} active{% endif %}" id="vanbantralai" href="{% url 'van_ban_tra_lai' %}">
+        <label>Văn bản trả lại</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    {% if is_personal_processing_list %}
+        <div
+            class="personal-work-page"
+            data-update-url-template="{% url 'cap_nhat_tien_do_ca_nhan' '__assignment_id__' %}"
+            data-transfer-url-template="{% url 'chuyen_phan_cong_ca_nhan' '__assignment_id__' %}"
+        >
+            <div class="search-bar">
+                <div class="search-input-wrapper">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Tim theo so van ban, so ky hieu, trich yeu...">
+                </div>
+                <button class="btn-xem" type="button" id="search-button">Xem</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Ngay ban hành</th>
+                            <th>Số văn bản</th>
+                            <th>Loại văn bản</th>
+                            <th>Số ký hiệu</th>
+                            <th>Trích yếu văn bản</th>
+                            <th>Người phân công</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="personal-table-body">
+                        {% for document in documents %}
+                            <tr
+                                data-assignment-id="{{ document.assignment_id }}"
+                                data-loai="{{ document.loai }}"
+                                data-record-id="{{ document.record_id }}"
+                                data-ngay-ban-hanh="{{ document.ngay_ban_hanh_display }}"
+                                data-so-van-ban="{{ document.so_van_ban }}"
+                                data-loai-vb="{{ document.ten_loai_vb }}"
+                                data-so-ky-hieu="{{ document.so_ky_hieu }}"
+                                data-trich-yeu="{{ document.trich_yeu }}"
+                                data-co-quan-ban-hanh="{{ document.co_quan_ban_hanh }}"
+                                data-nguoi-phan-cong="{{ document.nguoi_phan_cong }}"
+                                data-noi-dung-cd="{{ document.noi_dung_cd }}"
+                                data-thoi-han="{{ document.thoi_han }}"
+                                data-trang-thai-xu-ly="{{ document.trang_thai_xl }}"
+                            >
+                                <td class="text-center">{{ document.stt }}</td>
+                                <td>{{ document.ngay_ban_hanh_display }}</td>
+                                <td>{{ document.so_van_ban }}</td>
+                                <td>{{ document.ten_loai_vb }}</td>
+                                <td>{{ document.so_ky_hieu }}</td>
+                                <td>{{ document.trich_yeu }}</td>
+                                <td>{{ document.nguoi_phan_cong }}</td>
+                                <td class="text-center"><span class="status-badge">{{ document.trang_thai_xl }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="8" class="empty-state">Không có văn bản nào trong mục xử lý.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="personal-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span>CHI TIẾT VĂN BẢN XỬ LÝ</span>
+                    <button type="button" class="close-btn" id="close-personal-modal">&times;</button>
+                </div>
+                <form class="modal-body" id="personal-form">
+                    {% csrf_token %}
+                    <input type="hidden" id="p-assignment-id">
+                    <div class="form-row">
+                        <div class="form-group"><label>Số văn bản:</label><input type="text" id="p-so-van-ban" readonly></div>
+                        <div class="form-group"><label>Ngày ban hành:</label><input type="text" id="p-ngay-ban-hanh" readonly></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Loại văn bản:</label><input type="text" id="p-loai-vb" readonly></div>
+                        <div class="form-group"><label>Số ký hiệu:</label><input type="text" id="p-so-ky-hieu" readonly></div>
+                    </div>
+                    <div class="form-group-full"><label>Trích yếu:</label><textarea id="p-trich-yeu" rows="3" readonly></textarea></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Cơ quan ban hành:</label><input type="text" id="p-co-quan" readonly></div>
+                        <div class="form-group"><label>Người phân công:</label><input type="text" id="p-nguoi-phan-cong" readonly></div>
+                    </div>
+                    <div class="form-group-full"><label>Nội dung chỉ đạo:</label><textarea id="p-noi-dung-cd" rows="3" readonly></textarea></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Thời hạn:</label><input type="date" id="p-thoi-han" readonly></div>
+                        <div class="form-group">
+                            <label>Cập nhật tiến độ:</label>
+                            <select id="p-trang-thai-xu-ly">
+                                <option value="Dang xu ly"Đang xử lý</option>
+                                <option value="Da hoan thanh">Đã hoàn thành</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group-full file-input">
+                        <label>File văn bản:</label>
+                        <div class="file-input-wrapper">
+                            <a id="p-file-link" class="file-link disabled" href="#" target="_blank" rel="noopener noreferrer">
+                                <input type="text" id="p-file-name" readonly>
+                            </a>
+                            <span class="btn-icon"><i class="bi bi-file-earmark"></i></span>
+                        </div>
+                    </div>
+                    <div class="form-errors" id="personal-form-errors"></div>
+                    <div class="modal-footer">
+                        <button type="button" id="btn-update-progress" class="btn-primary">Cập nhật</button>
+                        {% if can_transfer_assignment %}
+                            <button type="button" id="btn-transfer-assignment" class="btn-success">Chuyển phân công</button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div
+            class="returned-work-page"
+            data-complete-url-template="{% url 'hoan_thanh_chinh_sua_van_ban' '__document_id__' %}"
+        >
+            <div class="search-bar">
+                <div class="search-input-wrapper">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Tim theo so van ban, so ky hieu, trich yeu...">
+                </div>
+                <button class="btn-xem" type="button" id="search-button">Xem</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Ngày ban hành</th>
+                            <th>Số văn bản</th>
+                            <th>Loại văn bản</th>
+                            <th>Số ký hiệu</th>
+                            <th>Trích yếu văn bản</th>
+                            <th>Người yêu cầu</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="personal-table-body">
+                        {% for document in documents %}
+                            <tr
+                                data-record-id="{{ document.record_id }}"
+                                data-ngay-ban-hanh="{{ document.ngay_ban_hanh_display }}"
+                                data-so-van-ban="{{ document.so_van_ban }}"
+                                data-loai-vb="{{ document.ten_loai_vb }}"
+                                data-ma-loai-vb="{{ document.ma_loai_vb }}"
+                                data-so-ky-hieu="{{ document.so_ky_hieu }}"
+                                data-trich-yeu="{{ document.trich_yeu }}"
+                                data-nguoi-yeu-cau="{{ document.nguoi_yeu_cau }}"
+                                data-noi-dung-yeu-cau="{{ document.noi_dung_yeu_cau }}"
+                                data-trang-thai="{{ document.trang_thai }}"
+                                data-file-name="{{ document.file_name }}"
+                                data-file-url="{{ document.file_url }}"
+                            >
+                                <td class="text-center">{{ document.stt }}</td>
+                                <td>{{ document.ngay_ban_hanh_display }}</td>
+                                <td>{{ document.so_van_ban }}</td>
+                                <td>{{ document.ten_loai_vb }}</td>
+                                <td>{{ document.so_ky_hieu }}</td>
+                                <td>{{ document.trich_yeu }}</td>
+                                <td>{{ document.nguoi_yeu_cau }}</td>
+                                <td class="text-center"><span class="status-badge">{{ document.trang_thai }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="8" class="empty-state">Không có văn bản nào bị trả lại.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="returned-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span>CHI TIẾT VĂN BẢN TRẢ LẠI</span>
+                    <button type="button" class="close-btn" id="close-returned-modal">&times;</button>
+                </div>
+                <form class="modal-body" id="returned-form">
+                    {% csrf_token %}
+                    <input type="hidden" id="r-record-id">
+                    <div class="form-row">
+                        <div class="form-group"><label>Số văn bản:</label><input type="text" id="r-so-van-ban" readonly></div>
+                        <div class="form-group"><label>Ngày ban hành:</label><input type="text" id="r-ngay-ban-hanh" readonly></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Loại văn bản:</label>
+                            <select id="r-loai-vb" name="ma_loai_vb">
+                                {% for loai_van_ban in loai_van_ban_list %}
+                                    <option value="{{ loai_van_ban.pk }}">{{ loai_van_ban.ten_loai_vb }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Số ký hiệu:</label><input type="text" id="r-so-ky-hieu" readonly></div>
+                    </div>
+                    <div class="form-group-full"><label>Trích yếu:</label><textarea id="r-trich-yeu" name="trich_yeu" rows="3"></textarea></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Người yêu cầu chỉnh sửa:</label><input type="text" id="r-nguoi-yeu-cau" readonly></div>
+                        <div class="form-group"><label>Trạng tha:</label><input type="text" id="r-trang-thai" readonly></div>
+                    </div>
+                    <div class="form-group-full"><label>Nội dung yêu cầu:</label><textarea id="r-noi-dung-yeu-cau" rows="4" readonly></textarea></div>
+                    <div class="form-group-full file-input">
+                        <label>Tải lại file dự thảo:</label>
+                        <div class="file-input-wrapper">
+                            <input type="text" id="r-file-name" readonly value="Khong bat buoc tai lai tep">
+                            <label class="btn-icon upload-trigger" for="r-file-upload"><i class="bi bi-upload"></i></label>
+                        </div>
+                        <input type="file" id="r-file-upload" name="ban_du_thao" class="hidden" accept=".pdf,.doc,.docx,image/*" multiple>
+                    </div>
+                    <div class="form-errors" id="returned-form-errors"></div>
+                    <div class="modal-footer">
+                        <button type="button" id="btn-complete-revision" class="btn-primary">Hoàn thành</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <div id="notification-overlay" class="notification-overlay hidden">
+        <div class="notification-box">
+            <i class="bi bi-check-circle-fill"></i>
+            <p id="notification-message">Cập nhật thành công!</p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/cong_viec_ca_nhan.js' %}?v=20260412-2"></script>
+{% endblock %}

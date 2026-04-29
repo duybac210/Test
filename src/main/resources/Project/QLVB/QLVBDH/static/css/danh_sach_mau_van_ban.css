@@ -1,0 +1,279 @@
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+#xemvbd,
+#dkvbd {
+    border-radius: 0;
+    padding: 10px;
+}
+
+.search-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    background: #fff;
+    padding: 0 10px;
+    height: 38px;
+}
+
+.search-icon {
+    color: #888;
+    font-size: 15px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.search-input-wrapper input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    background: transparent;
+    color: #333;
+}
+
+.btn-xem {
+    background-color: #1b4e7b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0 24px;
+    height: 38px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+}
+
+.btn-xem:hover {
+    opacity: 0.85;
+}
+
+.table-responsive {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.table-custom {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+}
+
+.table-custom thead th {
+    background-color: #f2f2f2;
+    color: #333;
+    font-weight: 600;
+    padding: 12px 8px;
+    border: 1px solid #dee2e6;
+    font-size: 14px;
+}
+
+.table-custom tbody td {
+    padding: 10px 8px;
+    border: 1px solid #dee2e6;
+    font-size: 14px;
+    color: #444;
+    vertical-align: middle;
+}
+
+.table-custom tbody tr:hover {
+    background-color: #dce9f5;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-box {
+    background: #fff;
+    border-radius: 6px;
+    width: 560px;
+    max-width: calc(100vw - 32px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.modal-header {
+    background-color: #1b4e7b;
+    color: white;
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-form-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.modal-form-group label {
+    width: 160px;
+    min-width: 160px;
+    font-weight: bold;
+    font-size: 13px;
+    padding-top: 8px;
+    color: #333;
+}
+
+.modal-input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    font-size: 13px;
+    background-color: #e9e9e9;
+    color: #333;
+}
+
+.modal-input:not([readonly]) {
+    background-color: #fff;
+    border-color: #1b4e7b;
+}
+
+.modal-textarea {
+    resize: vertical;
+    min-height: 70px;
+}
+
+.bg-gray {
+    background-color: #e9e9e9;
+}
+
+.file-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.file-input-wrapper .modal-input {
+    border: none;
+    border-radius: 0;
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    background: #eee;
+    border: none;
+    border-left: 1px solid #aaa;
+    color: #1b4e7b;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.modal-feedback {
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+.modal-feedback.success {
+    background: #e5f5ea;
+    color: #1c6c38;
+}
+
+.modal-feedback.error {
+    background: #fde8e8;
+    color: #a33333;
+}
+
+.modal-footer {
+    padding: 12px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #e0e0e0;
+    background: #fafafa;
+}
+
+.btn-modal {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btn-sua,
+.btn-xoa {
+    background-color: #1b4e7b;
+    color: white;
+}
+
+.btn-luu {
+    background-color: #28a745;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .search-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .modal-box {
+        width: calc(100vw - 16px);
+    }
+
+    .modal-form-group {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .modal-form-group label {
+        width: auto;
+        min-width: 0;
+        padding-top: 0;
+    }
+}

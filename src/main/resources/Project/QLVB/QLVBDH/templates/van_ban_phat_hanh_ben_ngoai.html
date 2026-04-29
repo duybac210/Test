@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Phat hanh ben ngoai{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/danh_sach_van_ban_tong_hop.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button" id="xemvbd" href="{% url 'danh_sach_van_ban_di' %}">
+        <label>Xem văn bản đi</label>
+    </a>
+    <a class="combo-button" id="dkvbd" href="{% url 'dang_ky_van_ban_di_tu_danh_muc' %}">
+        <label>Đăng ký văn bản đi</label>
+    </a>
+    <a class="combo-button active" id="phbng" href="{% url 'van_ban_phat_hanh_ben_ngoai' %}">
+        <label>Phát hành bên ngoài</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="document-catalog-page">
+        <div class="search-bar">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tìm kiếm theo số văn bản,Số ký hiệu, trích yếu, nơi nhận...">
+            </div>
+            <button class="btn-xem" type="button" id="search-button">Xem</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Ngày ban hành</th>
+                        <th>Số văn bản</th>
+                        <th>Loại văn bản</th>
+                        <th>Số ký hiệu</th>
+                        <th>Trích yếu</th>
+                        <th>Nơi nhận</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="external-table-body">
+                    {% for document in documents %}
+                        <tr
+                            data-record-id="{{ document.record_id }}"
+                            data-update-url="{% url 'cap_nhat_luan_chuyen_ben_ngoai' document.record_id %}"
+                            data-mark-sent-url="{% url 'danh_dau_da_gui_luan_chuyen_ben_ngoai' document.record_id %}"
+                            data-ngay-ban-hanh="{{ document.ngay_ban_hanh_display }}"
+                            data-so-van-ban="{{ document.so_van_ban }}"
+                            data-loai-vb="{{ document.ten_loai_vb }}"
+                            data-so-ky-hieu="{{ document.so_ky_hieu }}"
+                            data-trich-yeu="{{ document.trich_yeu }}"
+                            data-noi-nhan="{{ document.noi_nhan_tong_hop }}"
+                            data-trang-thai="{{ document.trang_thai }}"
+                            data-ma-noi-nhan="{{ document.ma_noi_nhan }}"
+                            data-nguoi-thuc-hien="{{ document.nguoi_thuc_hien }}"
+                            data-ghi-chu="{{ document.ghi_chu }}"
+                            data-thoi-gian-gui="{{ document.thoi_gian_gui }}"
+                            data-file-name="{{ document.file_name }}"
+                            data-file-url="{{ document.file_url }}"
+                        >
+                            <td class="text-center">{{ document.stt }}</td>
+                            <td>{{ document.ngay_ban_hanh_display }}</td>
+                            <td>{{ document.so_van_ban }}</td>
+                            <td>{{ document.ten_loai_vb }}</td>
+                            <td>{{ document.so_ky_hieu }}</td>
+                            <td>{{ document.trich_yeu }}</td>
+                            <td>{{ document.noi_nhan_tong_hop }}</td>
+                            <td class="text-center"><span class="status-badge">{{ document.trang_thai }}</span></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="8" class="empty-state">Chưa có văn bản nào được phát hành bên ngoài.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="external-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>CHI TIẾT VĂN BẢN PHÁT HÀNH BÊN NGOÀI</span>
+                <button type="button" class="close-btn" id="close-external-modal">&times;</button>
+            </div>
+            <form class="modal-body" id="external-edit-form">
+                {% csrf_token %}
+                <input type="hidden" id="external-update-url">
+                <input type="hidden" id="external-mark-sent-url">
+                <div class="form-row">
+                    <div class="form-group"><label>Số văn bản:</label><input type="text" id="e-so-van-ban" readonly></div>
+                    <div class="form-group"><label>Ngày ban hành:</label><input type="text" id="e-ngay-ban-hanh" readonly></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Loại văn bản:</label><input type="text" id="e-loai-vb" readonly></div>
+                    <div class="form-group"><label>Số ký hiệu:</label><input type="text" id="e-so-ky-hieu" readonly></div>
+                </div>
+                <div class="form-group-full"><label>Trích yếu:</label><textarea id="e-trich-yeu" rows="3" readonly></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Người thực hiện:</label><input type="text" id="e-nguoi-thuc-hien" readonly></div>
+                    <div class="form-group"><label>Thời gian gửi:</label><input type="text" id="e-thoi-gian-gui" readonly></div>
+                </div>
+                <div class="form-group-full">
+                    <label>Nơi nhận:</label>
+                    <input type="text" id="e-noi-nhan-display" readonly>
+                    <select id="e-noi-nhan" class="hidden">
+                        {% for recipient in recipient_list %}
+                            <option value="{{ recipient.pk }}">{{ recipient.ten_noi_nhan }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group-full"><label>Ghi chú:</label><textarea id="e-ghi-chu" rows="3" readonly></textarea></div>
+                <div class="form-group-full file-input">
+                    <label>File văn bản:</label>
+                    <div class="file-input-wrapper">
+                        <a id="e-file-link" class="file-link disabled" href="#" target="_blank" rel="noopener noreferrer">
+                            <input type="text" id="e-file-name" readonly>
+                        </a>
+                        <span class="btn-icon"><i class="bi bi-download"></i></span>
+                    </div>
+                </div>
+                <div class="form-errors" id="external-form-errors"></div>
+                <div class="modal-footer" id="external-modal-actions">
+                    <button type="button" id="btn-external-edit" class="btn-primary">Chỉnh sửa</button>
+                    <div id="external-edit-actions" class="edit-actions hidden">
+                        <button type="submit" id="btn-external-save" class="btn-success">Lưu</button>
+                        <button type="button" id="btn-external-cancel" class="btn-danger">Hủy</button>
+                    </div>
+                    <button type="button" id="btn-mark-sent" class="btn-success">Đã gửi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/van_ban_phat_hanh_ben_ngoai.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Danh sach mau van ban{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/danh_sach_mau_van_ban.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button active" id="xemvbd" href="{% url 'danh_sach_mau_van_ban' %}">
+        <label>Quản lý mẫu văn bản</label>
+    </a>
+    <a class="combo-button" id="dkvbd" href="{% url 'them_mau_van_ban' %}">
+        <label>Thêm mẫu văn bản</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div
+        class="template-list-page"
+        data-update-url-template="{% url 'cap_nhat_mau_van_ban' '__template_id__' %}"
+        data-delete-url-template="{% url 'xoa_mau_van_ban' '__template_id__' %}"
+        data-csrf-token="{{ csrf_token }}"
+    >
+        <div class="search-bar">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tim theo ma mau, ten mau, loai van ban...">
+            </div>
+            <button class="btn-xem" type="button" id="search-button">Xem</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Mã mẫu</th>
+                        <th>Ngày tạo</th>
+                        <th>Tên mẫu</th>
+                        <th>Loại văn bản</th>
+                        <th>Trạng thái mẫu</th>
+                        <th>Mục đích sử dụng</th>
+                    </tr>
+                </thead>
+                <tbody id="data-table-body">
+                    {% for template in templates %}
+                        <tr
+                            class="template-row"
+                            data-ma="{{ template.ma_mau_vb }}"
+                            data-ngay="{{ template.ngay_tao|date:'Y-m-d' }}"
+                            data-ten="{{ template.ten_mau }}"
+                            data-loai="{{ template.ma_loai_vb.ten_loai_vb }}"
+                            data-loai-id="{{ template.ma_loai_vb_id }}"
+                            data-trangthai="{{ template.trang_thai }}"
+                            data-mucdich="{{ template.muc_dich }}"
+                            data-file="{{ template.file_mau.name|default:''|cut:'mau_van_ban/' }}"
+                            data-file-url="{% if template.file_mau %}{{ template.file_mau.url }}{% endif %}"
+                        >
+                            <td class="text-center">{{ template.ma_mau_vb }}</td>
+                            <td class="text-center">{{ template.ngay_tao|date:"d/m/Y" }}</td>
+                            <td class="text-center">{{ template.ten_mau }}</td>
+                            <td class="text-center">{{ template.ma_loai_vb.ten_loai_vb }}</td>
+                            <td class="text-center">{{ template.get_trang_thai_display }}</td>
+                            <td class="text-center">{{ template.muc_dich|default:"" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="6" class="text-center">Chưa có mẫu văn bản nào.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="detail-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>CHI TIẾT MẪU VĂN BẢN</span>
+                <button class="modal-close" type="button" id="close-detail-modal">&#x2715;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-form-group">
+                    <label for="detail-ma">Mã mẫu văn bản:</label>
+                    <input type="text" id="detail-ma" readonly class="modal-input bg-gray">
+                </div>
+                <div class="modal-form-group">
+                    <label for="detail-ngay">Ngày tạo:</label>
+                    <input type="date" id="detail-ngay" readonly class="modal-input bg-gray">
+                </div>
+                <div class="modal-form-group">
+                    <label for="detail-ten">Tên mẫu:</label>
+                    <input type="text" id="detail-ten" readonly class="modal-input bg-gray">
+                </div>
+                <div class="modal-form-group">
+                    <label for="detail-loai-select">Loại văn bản:</label>
+                    <input type="text" id="detail-loai-text" readonly class="modal-input bg-gray">
+                    <select id="detail-loai-select" class="modal-input modal-select hidden">
+                        {% for loai_van_ban in loai_van_ban_list %}
+                            <option value="{{ loai_van_ban.pk }}">{{ loai_van_ban.ten_loai_vb }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="detail-trangthai-select">Trạng thái mẫu:</label>
+                    <input type="text" id="detail-trangthai-text" readonly class="modal-input bg-gray">
+                    <select id="detail-trangthai-select" class="modal-input modal-select hidden">
+                        {% for status in template_status_choices %}
+                            <option value="{{ status }}">{{ status }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="detail-mucdich">Mục đích:</label>
+                    <textarea id="detail-mucdich" readonly class="modal-input modal-textarea bg-gray" rows="3"></textarea>
+                </div>
+                <div class="modal-form-group">
+                    <label for="detail-file-input">Tải lên mẫu:</label>
+                    <input type="file" id="detail-file-input" class="hidden" accept=".pdf,.doc,.docx,image/*">
+                    <div class="file-input-wrapper bg-gray" id="detail-file-wrapper">
+                        <input type="text" id="detail-file" readonly class="modal-input bg-gray">
+                        <a id="detail-file-download" class="btn-icon download-link hidden" href="" download aria-label="Tai file mau">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <button class="btn-icon hidden" type="button" id="detail-file-trigger" aria-label="Chon file moi">
+                            <i class="bi bi-file-earmark-break"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="modal-feedback" class="modal-feedback hidden"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-sua" type="button" id="btn-sua">Sửa mẫu</button>
+                <button class="btn-modal btn-luu hidden" type="button" id="btn-luu">Lưu</button>
+                <button class="btn-modal btn-xoa" type="button" id="btn-xoa">Xóa mẫu</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/danh_sach_mau_van_ban.js' %}"></script>
+{% endblock %}

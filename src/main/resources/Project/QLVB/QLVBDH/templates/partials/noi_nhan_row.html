@@ -1,0 +1,13 @@
+<tr
+    class="recipient-row"
+    data-ma-noi-nhan="{{ recipient.ma_noi_nhan }}"
+    data-ten-noi-nhan="{{ recipient.ten_noi_nhan }}"
+    data-dia-chi="{{ recipient.dia_chi }}"
+    data-so-dien-thoai="{{ recipient.so_dien_thoai }}"
+    data-gmail="{{ recipient.gmail }}"
+    data-thong-tin-khac="{{ recipient.thong_tin_khac }}"
+>
+    <td>{{ recipient.ten_noi_nhan }}</td>
+    <td>{{ recipient.dia_chi|default:"" }}</td>
+    <td>{{ recipient.so_dien_thoai|default:"" }}</td>
+</tr>

@@ -1,0 +1,518 @@
+package testcases;
+
+import common.Utilities;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import pageobjects.HomePage;
+import pageobjects.ManHinhDangKyVanBanDi;
+import pageobjects.ManHinhDuyetVanBan;
+import pageobjects.ManHinhTaoVanBanDi;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.Duration;
+
+public class TC_DangKyVanBanDi {
+    private WebDriver driver;
+    private WebDriverWait wait;
+    private ManHinhDangKyVanBanDi dangKyPage;
+
+    // Credentials
+    private static final String CLERK_USER = "GV000006";
+    private static final String CLERK_PASS = "giaovien123";
+    private static final String TEACHER_USER = "GV00000014";
+    private static final String TEACHER_PASS = "giaovien123";
+    private static final String HT_USER = "GV00000001";
+    private static final String HT_PASS = "giaovien123";
+
+    @BeforeMethod
+    public void setUp() {
+        driver = Utilities.getDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        dangKyPage = new ManHinhDangKyVanBanDi(driver);
+    }
+
+    @AfterMethod
+    public void tearDown() {
+        Utilities.logout();
+        Utilities.quitDriver();
+    }
+
+    // --- Helpers ---
+
+    private String createTempFile(String fileName, String content) {
+        try {
+            File tempDir = new File(System.getProperty("java.io.tmpdir"));
+            File f = new File(tempDir, fileName);
+            try (FileWriter w = new FileWriter(f)) {
+                w.write(content);
+            }
+            return f.getAbsolutePath();
+        } catch (IOException e) {
+            throw new RuntimeException("KhÃ´ng thá» táº¡o file test", e);
+        }
+    }
+
+    /** Táº¡o vÄn báº£n Äi tá»« dá»± tháº£o (GiÃ¡o viÃªn táº¡o) vÃ  tráº£ vá» trÃ­ch yáº¿u unique. */
+    private String createDraft(String trichYeu) {
+        Utilities.loginAs(TEACHER_USER, TEACHER_PASS);
+        new HomePage(driver).clickTaoVanBanLink();
+        ManHinhTaoVanBanDi taoPage = new ManHinhTaoVanBanDi(driver);
+        taoPage.selectLoaiVanBan("LVB0000013");
+        taoPage.selectMucDo("MD00000001");
+        taoPage.inputNoiNhan("To Toan");
+        taoPage.inputTrichYeu(trichYeu);
+        taoPage.uploadFileDuThao(createTempFile("du_thao.pdf", "Content").toString());
+        taoPage.submitForm();
+        // Sau khi táº¡o, cÃ³ thá» chuyá»n vá» danh sÃ¡ch VB hoáº·c cÃ´ng viá»c cÃ¡ nhÃ¢n tÃ¹y phiÃªn báº£n
+        wait.until(ExpectedConditions.or(
+            ExpectedConditions.urlContains("/van-ban-di/"),
+            ExpectedConditions.urlContains("/cong-viec-ca-nhan/")
+        ));
+        Utilities.logout();
+        return trichYeu;
+    }
+
+    /** Duyá»t vÄn báº£n (Hiá»u trÆ°á»ng duyá»t) Äá» chuyá»n sang tráº¡ng thÃ¡i CHá» ÄÄNG KÃ. */
+    private void approveDocument(String trichYeu) {
+        Utilities.loginAs(HT_USER, HT_PASS);
+        new HomePage(driver).navigateToDuyetVanBan();
+        ManHinhDuyetVanBan duyetPage = new ManHinhDuyetVanBan(driver);
+        duyetPage.searchDocument(trichYeu);
+        duyetPage.clickDocumentByTrichYeu(trichYeu);
+        duyetPage.clickDuyet();
+        Utilities.logout();
+    }
+
+    /** TÃ¬m so_vb_di cá»§a vÄn báº£n dá»±a trÃªn trÃ­ch yáº¿u tá»« danh sÃ¡ch. */
+    private String getSoVBDiFromList(String trichYeu) {
+        driver.get("http://127.0.0.1:8000/van-ban-di/");
+        WebElement row = wait.until(ExpectedConditions.visibilityOfElementLocated(
+            By.xpath("//tr[contains(., '" + trichYeu + "')]")
+        ));
+        // Giáº£ sá»­ so_vb_di náº±m á» cá»t Äáº§u tiÃªn
+        return row.findElement(By.xpath("./td[1]")).getText().trim();
+    }
+
+    // ==========================================
+    // NHÃM 1: KIá»M THá»¬ PHÃN QUYá»N & Báº¢O Máº¬T
+    // ==========================================
+
+    @Test(description = "TC_SEC_01: Cháº·n truy cáº­p vá»i tÃ i khoáº£n khÃ´ng cÃ³ quyá»n VÄn thÆ°")
+    public void TC_SEC_01_BlockNonClerkAccess() {
+        Utilities.loginAs(TEACHER_USER, TEACHER_PASS);
+        driver.get("http://127.0.0.1:8000/van-ban-di/dang-ky/");
+        
+        dangKyPage.checkPageNotFound();
+
+        String currentUrl = driver.getCurrentUrl();
+        String pageSource = driver.getPageSource();
+        boolean isBlocked = !currentUrl.contains("van-ban-di/dang-ky/") 
+                            || pageSource.contains("Ban khong co quyen truy cap");
+                            
+        Assert.assertTrue(isBlocked, "TÃ i khoáº£n khÃ´ng cÃ³ quyá»n VÄn thÆ° pháº£i bá» cháº·n truy cáº­p trang ÄÄng kÃ½.");
+        System.out.println("TC_SEC_01 PASS: ÄÃ£ cháº·n truy cáº­p khÃ´ng cÃ³ quyá»n thÃ nh cÃ´ng.");
+    }
+
+    @Test(description = "TC_SEC_02: Cháº·n ÄÄng kÃ½ vÄn báº£n chÆ°a ÄÆ°á»£c duyá»t")
+    public void TC_SEC_02_BlockUnapprovedDocRegistration() {
+        // 1. Táº¡o dá»± tháº£o nhÆ°ng CHÆ¯A DUYá»T
+        String trichYeu = "Auto-Unapproved-" + System.currentTimeMillis();
+        createDraft(trichYeu);
+        
+        // 2. ÄÄng nháº­p quyá»n VÄn thÆ° vÃ  tÃ¬m sá» hiá»u VB
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        String soVBDi = getSoVBDiFromList(trichYeu);
+        
+        // 3. Cá» tÃ¬nh truy cáº­p tháº³ng URL ÄÄng kÃ½ cá»§a VB ÄÃ³
+        driver.get("http://127.0.0.1:8000/van-ban-di/" + soVBDi + "/dang-ky/");
+        
+        // Expected: Há» thá»ng cháº·n hoáº·c bÃ¡o lá»i vÃ¬ tráº¡ng thÃ¡i chÆ°a pháº£i CHO_DANG_KY
+        String pageSource = driver.getPageSource();
+        String currentUrl = driver.getCurrentUrl();
+        boolean isBlocked = !currentUrl.contains("/dang-ky/") 
+                            || pageSource.contains("Ban khong co quyen") 
+                            || pageSource.contains("khÃ´ng há»£p lá»")
+                            || pageSource.contains("ChÆ°a thá» ÄÄng kÃ½");
+                            
+        Assert.assertTrue(isBlocked, "KhÃ´ng ÄÆ°á»£c phÃ©p ÄÄng kÃ½ vÄn báº£n khi chÆ°a ÄÆ°á»£c Hiá»u trÆ°á»ng duyá»t.");
+    }
+
+    // ==========================================
+    // NHÃM 2: LUá»NG NGHIá»P Vá»¤ CHÃNH
+    // ==========================================
+
+    @Test(description = "TC_FLOW_01: ÄÄng kÃ½ thÃ nh cÃ´ng vÄn báº£n tá»« dá»± tháº£o (Luá»ng 1)")
+    public void TC_FLOW_01_RegisterFromDraftSuccess() {
+        // 1. Chuáº©n bá» VB á» tráº¡ng thÃ¡i Chá» ÄÄng kÃ½
+        String trichYeu = "Auto-Flow1-" + System.currentTimeMillis();
+        createDraft(trichYeu);
+        approveDocument(trichYeu);
+        
+        // 2. VÄn thÆ° thá»±c hiá»n ÄÄng kÃ½
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        String soVBDi = getSoVBDiFromList(trichYeu);
+        driver.get("http://127.0.0.1:8000/van-ban-di/" + soVBDi + "/dang-ky/");
+        
+        dangKyPage.inputNgayKy("2026-04-26");
+        // Loáº¡i VB vÃ  TrÃ­ch yáº¿u lÃºc nÃ y thÆ°á»        dangKyPage.uploadBanChinhThuc(filePath);
+        
+        dangKyPage.clickLuu();
+        
+        // 3. Kiá»m tra káº¿t quáº£
+        wait.until(ExpectedConditions.urlContains("dang-ky"));
+        Assert.assertEquals(dangKyPage.getTrangThai(), "ÄÃ£ ÄÄng kÃ½", "Tráº¡ng thÃ¡i pháº£i chuyá»n sang 'ÄÃ£ ÄÄng kÃ½'.");
+        System.out.println("TC_FLOW_01 PASS: ÄÄng kÃ½ vÄn báº£n tá»« dá»± tháº£o thÃ nh cÃ´ng.");
+    }
+
+    @Test(description = "TC_FLOW_02: ÄÄng kÃ½ má»i vÄn báº£n trá»±c tiáº¿p (Luá»ng 2)")
+        @Test(description = "TC_FLOW_02: Đăng ký mới văn bản trực tiếp (Luồng 2)")
+    public void TC_FLOW_02_DirectRegistrationSuccess() {
+        System.out.println(">>> BẮT ĐẦU TC_FLOW_02_DirectRegistrationSuccess");
+        
+        System.out.println("Step 1: Đăng nhập và mở màn hình đăng ký trực tiếp.");
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        System.out.println("  - Đã đăng nhập thành công.");
+        dangKyPage.openDirectRegistration();
+        System.out.println("  - Đã mở màn hình đăng ký: " + driver.getCurrentUrl());
+        
+        String trichYeu = "Auto-Flow2-" + System.currentTimeMillis();
+        String filePath = createTempFile("chinh_thuc_direct.pdf", "Nội dung bản chính thức");
+
+        System.out.println("Step 2: Điền thông tin vào form đăng ký.");
+        System.out.println("  - Nhập Ngày ký: 2026-04-27");
+        dangKyPage.inputNgayKy("2026-04-27");
+        
+        System.out.println("  - Chọn Loại văn bản: LVB0000013");
+        dangKyPage.selectLoaiVanBan("LVB0000013"); 
+        
+        System.out.println("  - Chọn Mức độ: MD00000001");
+        dangKyPage.selectMucDo("MD00000001");
+        
+        System.out.println("  - Chọn Người tạo: GV00000014");
+        dangKyPage.selectNguoiTao("GV00000014");
+        
+        System.out.println("  - Chọn Người ký: GV00000001");
+        dangKyPage.selectNguoiKy("GV00000001");
+        
+        System.out.println("  - Nhập Nơi nhận: Phòng Đào tạo");
+        dangKyPage.inputNoiNhan("Phòng Đào tạo");
+        
+        try {
+            System.out.println("Step 3: Nhấn nút Cấp số (nếu có).");
+            dangKyPage.clickCapSo();
+            wait.until(d -> !dangKyPage.getSoKyHieu().isEmpty());
+            System.out.println("  - Số ký hiệu nhận được: " + dangKyPage.getSoKyHieu());
+        } catch (Exception e) {
+            System.out.println("  - Thông báo: Nút cấp số bị ẩn hoặc không cần thiết: " + e.getMessage());
+        }
+        
+        System.out.println("  - Nhập Trích yếu: " + trichYeu);
+        dangKyPage.inputTrichYeu(trichYeu);
+        
+        System.out.println("  - Upload file bản chính thức: " + filePath);
+        dangKyPage.uploadBanChinhThuc(filePath);
+        
+        System.out.println("Step 4: Nhấn nút Lưu.");
+        dangKyPage.clickLuu();
+        
+        System.out.println("Step 5: Đợi hệ thống xử lý và chuyển hướng thành công.");
+        System.out.println("  - URL hiện tại trước khi đợi: " + driver.getCurrentUrl());
+        try {
+            dangKyPage.waitForRegistrationSuccess();
+            System.out.println("  - Chuyển hướng thành công. URL mới: " + driver.getCurrentUrl());
+        } catch (Exception e) {
+            System.out.println("  - LỖI: Đợi chuyển hướng (URL chứa VBOxxx) thất bại sau khi nhấn Lưu!");
+            System.out.println("  - URL hiện tại: " + driver.getCurrentUrl());
+            throw e;
+        }
+        
+        System.out.println("Step 6: Kiểm tra thông báo thành công và Mã số văn bản đi.");
+        String soVBDi = dangKyPage.getSoVBDi();
+        System.out.println("  - Số văn bản đi (ID): " + soVBDi);
+        
+        String actualMsg = dangKyPage.getSuccessMessage();
+        System.out.println("  - Thông báo trên giao diện: " + actualMsg);
+        
+        Assert.assertTrue(actualMsg.toLowerCase().contains("da dang ky van ban di") && actualMsg.contains(soVBDi), 
+            "Thông báo thành công không đúng. Mong đợi chứa: 'da dang ky van ban di' và '" + soVBDi + "', Thực tế: '" + actualMsg + "'");
+        
+        System.out.println("Step 7: Kiểm tra trạng thái trên trang chi tiết.");
+        String trangThaiChiTiet = dangKyPage.getTrangThai();
+        System.out.println("  - Trạng thái hiện tại: " + trangThaiChiTiet);
+        // Chấp nhận cả tiếng Việt có dấu hoặc không dấu tùy môi trường
+        Assert.assertTrue(trangThaiChiTiet.contains("Đã đăng ký") || trangThaiChiTiet.contains("Da dang ky") || trangThaiChiTiet.contains("đăng ký"), 
+            "Trạng thái tại trang chi tiết không đúng. Thực tế: " + trangThaiChiTiet);
+
+        System.out.println("Step 8: Nhấn nút 'Xem văn bản đi' để chuyển về danh sách.");
+        dangKyPage.clickXemVBDi();
+        
+        System.out.println("Step 9: Kiểm tra trạng thái của văn bản trong danh sách.");
+        wait.until(ExpectedConditions.urlMatches(".*van-ban-di/$"));
+        System.out.println("  - Đã quay lại danh sách văn bản đi.");
+
+        WebElement row = wait.until(ExpectedConditions.visibilityOfElementLocated(
+            By.xpath("//tr[contains(., '" + soVBDi + "')]")
+        ));
+        System.out.println("  - Đã tìm thấy văn bản " + soVBDi + " trong danh sách.");
+        
+        String statusInList = row.findElement(By.xpath("./td[last()]")).getText().trim();
+        if (!statusInList.contains("Đã đăng ký") && !statusInList.contains("Da dang ky")) {
+             System.out.println("  - Thử kiểm tra cột thứ 7.");
+             statusInList = row.findElement(By.xpath("./td[7]")).getText().trim();
+        }
+        System.out.println("  - Trạng thái trong danh sách: " + statusInList);
+        
+        Assert.assertTrue(statusInList.contains("Đã đăng ký") || statusInList.contains("Da dang ky"), 
+            "Trạng thái của văn bản " + soVBDi + " trong danh sách không đúng.");
+        
+        System.out.println(">>> KẾT THÚC TC_FLOW_02: PASS");
+    }
+        
+        dangKyPage.inputTrichYeu(trichYeu);
+        dangKyPage.uploadBanChinhThuc(filePath);
+        
+        System.out.println("Step 4: Nháº¥n nÃºt LÆ°u.");
+        dangKyPage.clickLuu();
+        
+        System.out.println("Step 5: Äá»£i há» thá»ng xá»­ lÃ½ vÃ  chuyá»n hÆ°á»ng thÃ nh cÃ´ng.");
+        dangKyPage.waitForRegistrationSuccess();
+        
+        System.out.println("Step 6: Kiá»m tra thÃ´ng bÃ¡o thÃ nh cÃ´ng vÃ  MÃ£ sá» vÄn báº£n Äi.");
+        String soVBDi = dangKyPage.getSoVBDi();
+        System.out.println("-> Sá» vÄn báº£n Äi ÄÆ°á»£c cáº¥p: " + soVBDi);
+        
+        String expectedMsg = "Da dang ky van ban di " + soVBDi;
+        String actualMsg = dangKyPage.getSuccessMessage();
+        System.out.println("-> ThÃ´ng bÃ¡o nháº­n ÄÆ°á»£c: " + actualMsg);
+        
+        Assert.assertTrue(actualMsg.toLowerCase().contains("da dang ky van ban di") && actualMsg.contains(soVBDi), 
+            "ThÃ´ng bÃ¡o thÃ nh cÃ´ng khÃ´ng ÄÃºng. Mong Äá»£i chá»©a: '" + expectedMsg + "', Thá»±c táº¿: '" + actualMsg + "'");
+        
+        System.out.println("Step 7: Kiá»m tra tráº¡ng thÃ¡i trÃªn trang chi tiáº¿t.");
+        Assert.assertEquals(dangKyPage.getTrangThai(), "ÄÃ£ ÄÄng kÃ½", "Tráº¡ng thÃ¡i táº¡i trang chi tiáº¿t pháº£i lÃ  'ÄÃ£ ÄÄng kÃ½'.");
+
+        System.out.println("Step 8: Nháº¥n nÃºt 'Xem vÄn báº£n Äi' Äá» chuyá»n vá» danh sÃ¡ch.");
+        dangKyPage.clickXemVBDi();
+        
+        System.out.println("Step 9: Kiá»m tra tráº¡ng thÃ¡i cá»§a vÄn báº£n trong danh sÃ¡ch.");
+        wait.until(ExpectedConditions.urlMatches(".*van-ban-di/$"));
+
+        WebElement row = wait.until(ExpectedConditions.visibilityOfElementLocated(
+            By.xpath("//tr[contains(., '" + soVBDi + "')]")
+        ));
+        
+        String statusInList = row.findElement(By.xpath("./td[last()]")).getText().trim();
+        if (!statusInList.equals("ÄÃ£ ÄÄng kÃ½")) {
+             statusInList = row.findElement(By.xpath("./td[7]")).getText().trim();
+        }
+        
+        Assert.assertEquals(statusInList, "ÄÃ£ ÄÄng kÃ½", "Tráº¡ng thÃ¡i cá»§a vÄn báº£n " + soVBDi + " trong danh sÃ¡ch khÃ´ng khá»p.");
+        
+        System.out.println("TC_FLOW_02 PASS: ÄÃ£ hoÃ n thÃ nh táº¥t cáº£ cÃ¡c bÆ°á»c kiá»m tra.");
+    }
+m tra.");
+    }
+        
+        // Láº¥y tráº¡ng thÃ¡i tá»« cá»t cuá»i cÃ¹ng (hoáº·c cá»t 7) cá»§a dÃ²ng tÃ¬m ÄÆ°á»£c
+        String statusInList = row.findElement(By.xpath("./td[last()]")).getText().trim();
+        if (!statusInList.equals("ÄÃ£ ÄÄng kÃ½")) {
+             statusInList = row.findElement(By.xpath("./td[7]")).getText().trim();
+        }
+        
+        Assert.assertEquals(statusInList, "ÄÃ£ ÄÄng kÃ½", "Tráº¡ng thÃ¡i cá»§a vÄn báº£n " + soVBDi + " trong danh sÃ¡ch khÃ´ng khá»p.");
+
+        
+        System.out.println("TC_FLOW_02 PASS: ÄÃ£ kiá»m tra thÃ´ng bÃ¡o thÃ nh cÃ´ng vÃ  tráº¡ng thÃ¡i trong danh sÃ¡ch.");
+    }
+
+
+
+
+    // ==========================================
+    // NHÃM 3: RÃNG BUá»C Dá»® LIá»U & Tá»P ÄÃNH KÃM
+    // ==========================================
+
+    @Test(description = "TC_VAL_02: Kiá»m tra giá»i háº¡n Äá» dÃ i kÃ½ tá»± trÆ°á»ng TrÃ­ch yáº¿u")
+    public void TC_VAL_02_MaxLengthValidation() {
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        dangKyPage.openDirectRegistration();
+        
+        StringBuilder longText = new StringBuilder();
+        for (int i = 0; i < 50; i++) {
+            longText.append("1234567890");
+        }
+        longText.append("!"); // 501st char
+        
+        dangKyPage.inputTrichYeu(longText.toString());
+        dangKyPage.clickLuu();
+        
+        // Kiá»m tra xem cÃ³ xuáº¥t hiá»n thÃ´ng bÃ¡o lá»i trong class .errorlist hoáº·c .form-errors khÃ´ng
+        boolean hasError = driver.findElements(By.cssSelector(".errorlist, .form-errors")).size() > 0;
+        
+        Assert.assertTrue(hasError, "BUG: Há» thá»ng pháº£i bÃ¡o lá»i khi TrÃ­ch yáº¿u vÆ°á»£t quÃ¡ 500 kÃ½ tá»± (KhÃ´ng tÃ¬m tháº¥y .errorlist hoáº·c .form-errors).");
+    }
+
+    @Test(description = "TC_FILE_01_Required: Kiá»m tra tÃ­nh báº¯t buá»c cá»§a Báº£n chÃ­nh thá»©c")
+    public void TC_FILE_01_OfficialFileRequired() {
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        dangKyPage.openDirectRegistration();
+        
+        dangKyPage.inputTrichYeu("Test validation file required");
+        dangKyPage.clickLuu();
+        
+        boolean hasError = driver.findElements(By.cssSelector(".errorlist, .form-errors")).size() > 0;
+        
+        Assert.assertTrue(hasError, "BUG: Há» thá»ng pháº£i yÃªu cáº§u táº£i lÃªn Báº£n chÃ­nh thá»©c khi ÄÄng kÃ½ (KhÃ´ng tÃ¬m tháº¥y thÃ´ng bÃ¡o lá»i).");
+    }
+
+    @Test(description = "TC_FILE_02: Kiá»m tra Äá»nh dáº¡ng file khÃ´ng há»£p lá» (.exe)")
+    public void TC_FILE_02_InvalidFileFormat() {
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        dangKyPage.openDirectRegistration();
+        
+        String exeFilePath = createTempFile("virus.exe", "Fake virus content");
+        dangKyPage.uploadBanChinhThuc(exeFilePath);
+        
+        dangKyPage.clickLuu();
+        
+        boolean hasError = driver.findElements(By.cssSelector(".errorlist, .form-errors")).size() > 0;
+        
+        Assert.assertTrue(hasError, "Há» thá»ng pháº£i cháº·n file cÃ³ Äá»nh dáº¡ng nguy hiá»m nhÆ° .exe (KhÃ´ng tÃ¬m tháº¥y thÃ´ng bÃ¡o lá»i).");
+    }
+
+    // ==========================================
+    // NHÃM 4: Cáº¤P Sá» & Xá»¬ LÃ Äá»NG THá»I
+    // ==========================================
+
+    @Test(description = "TC_CAPSO_02: Cáº¥p sá» khi chÆ°a chá»n Loáº¡i vÄn báº£n")
+    public void TC_CAPSO_02_NumberingWithoutType() {
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        dangKyPage.openDirectRegistration();
+        
+        // KhÃ´ng chá»n Loáº¡i vÄn báº£n, nháº¥n LÆ°u (nÃºt nÃ y kÃ­ch hoáº¡t logic cáº¥p sá»)
+        dangKyPage.clickLuu();
+        
+        // Kiá»m tra xem cÃ³ xuáº¥t hiá»n thÃ´ng bÃ¡o lá»i validation trÃªn trang khÃ´ng
+        // Thay vÃ¬ Alert, há» thá»ng hiá»n táº¡i sá»­ dá»¥ng thÃ´ng bÃ¡o lá»i trong class .errorlist hoáº·c .invalid-feedback
+        boolean hasError = driver.findElements(By.cssSelector(".errorlist, .invalid-feedback, .form-errors")).size() > 0;
+        
+        // Hoáº·c kiá»m tra text cá»¥ thá» náº¿u cáº§n
+        if (!hasError) {
+            String pageSource = driver.getPageSource();
+            hasError = pageSource.contains("TrÆ°á»ng nÃ y lÃ  báº¯t buá»c") || pageSource.contains("Vui lÃ²ng chá»n");
+        }
+        
+        Assert.assertTrue(hasError, "Há» thá»ng pháº£i hiá»n thá» thÃ´ng bÃ¡o lá»i khi chÆ°a chá»n Loáº¡i vÄn báº£n.");
+        System.out.println("TC_CAPSO_02 PASS: ÄÃ£ xÃ¡c nháº­n há» thá»ng bÃ¡o lá»i khi thiáº¿u Loáº¡i vÄn báº£n.");
+    }
+
+    @Test(description = "TC_CAPSO_01: Kiá»m tra Äá»nh dáº¡ng sá» kÃ½ hiá»u sau khi ÄÄng kÃ½ (Positive)")
+    public void TC_CAPSO_01_AutoNumberingFormat() {
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        dangKyPage.openDirectRegistration();
+        
+        dangKyPage.inputNgayKy("2026-04-28");
+        // Thá»­ sá»­ dá»¥ng LVB0000002 náº¿u LVB0000001 khÃ´ng tá»n táº¡i
+        try {
+            dangKyPage.selectLoaiVanBan("LVB0000002");
+        } catch (Exception e) {
+            dangKyPage.selectLoaiVanBan("LVB0000001");
+        }
+        
+        dangKyPage.selectMucDo("MD00000001");
+        dangKyPage.selectNguoiTao("GV00000014");
+        dangKyPage.selectNguoiKy("GV00000001");
+        dangKyPage.inputNoiNhan("PhÃ²ng HÃ nh chÃ­nh");
+        dangKyPage.inputTrichYeu("Test auto numbering " + System.currentTimeMillis());
+        dangKyPage.uploadBanChinhThuc(createTempFile("test_cap_so.pdf", "Content"));
+        
+        // Thá»±c hiá»n cáº¥p sá» trÆ°á»c khi lÆ°u (náº¿u cáº§n)
+        try {
+            dangKyPage.clickCapSo();
+            wait.until(d -> !dangKyPage.getSoKyHieu().isEmpty());
+        } catch (Exception e) {
+            System.out.println("NÃºt cáº¥p sá» khÃ´ng kháº£ dá»¥ng, bá» qua.");
+        }
+        
+        dangKyPage.clickLuu();
+        
+        // Sau khi lÆ°u thÃ nh cÃ´ng, kiá»m tra sá» kÃ½ hiá»u ÄÃ£ ÄÆ°á»£c sinh ra
+        dangKyPage.waitForRegistrationSuccess();
+        String soKyHieu = dangKyPage.getSoKyHieu();
+        
+        Assert.assertFalse(soKyHieu.isEmpty(), "Sá» kÃ½ hiá»u khÃ´ng ÄÆ°á»£c Äá» trá»ng sau khi ÄÄng kÃ½.");
+        Assert.assertTrue(soKyHieu.contains("/"), "Sá» kÃ½ hiá»u pháº£i cÃ³ Äá»nh dáº¡ng chá»©a dáº¥u '/' (VD: 01/QÄ). Thá»±c táº¿: " + soKyHieu);
+        System.out.println("TC_CAPSO_01 PASS: Sá» kÃ½ hiá»u ÄÃ£ ÄÆ°á»£c sinh ÄÃºng Äá»nh dáº¡ng: " + soKyHieu);
+    }
+
+    @Test(description = "TC_CAPSO_03: Cáº¥p sá» vá»i loáº¡i vÄn báº£n thiáº¿u tÃªn viáº¿t táº¯t (Negative)")
+    public void TC_CAPSO_03_NumberingWithMissingAbbreviation() {
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        dangKyPage.openDirectRegistration();
+
+        // Äiá»n cÃ¡c trÆ°á»ng báº¯t buá»c khÃ¡c
+        dangKyPage.inputNgayKy("2026-04-28");
+        dangKyPage.selectMucDo("MD00000001");
+        dangKyPage.selectNguoiTao("GV00000014");
+        dangKyPage.selectNguoiKy("GV00000001");
+        dangKyPage.inputNoiNhan("Test");
+        dangKyPage.inputTrichYeu("Test error handling " + System.currentTimeMillis());
+        dangKyPage.uploadBanChinhThuc(createTempFile("test_error.pdf", "Content"));
+
+        // Cá» tÃ¬nh sá»­ dá»¥ng 'LVB0000014' lÃ  loáº¡i VB ÄÆ°á»£c cáº¥u hÃ¬nh thiáº¿u tÃªn viáº¿t táº¯t Äá» gÃ¢y lá»i
+        dangKyPage.selectLoaiVanBan("LVB0000014");
+
+        dangKyPage.clickLuu();
+
+        // Sau khi click LÆ°u, server sáº½ tráº£ vá» trang lá»i.
+        // Ta khÃ´ng Äá»£i chuyá»n trang mÃ  kiá»m tra ná»i dung trang hiá»n táº¡i.
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("body")));
+        String pageSource = driver.getPageSource();
+        boolean isErrorVisible = pageSource.contains("Loai van ban chua co ten viet tat de cap so.");
+
+        Assert.assertTrue(isErrorVisible, "Há» thá»ng pháº£i hiá»n thá» lá»i cá»§a Django khi loáº¡i vÄn báº£n thiáº¿u tÃªn viáº¿t táº¯t Äá» cáº¥p sá».");
+    }
+
+    // ==========================================
+    // NHÃM 5: Há» QUáº¢ & CHUYá»N Äá»I TRáº NG THÃI
+    // ==========================================
+
+    @Test(description = "TC_STATE_01: Kiá»m tra cháº¿ Äá» Read-only sau khi ÄÄng kÃ½")
+    public void TC_STATE_01_ReadOnlyAfterRegistration() {
+        // Thá»±c hiá»n ÄÄng kÃ½ má»t vÄn báº£n trÆ°á»c
+        TC_FLOW_02_DirectRegistrationSuccess();
+        
+        // Sau khi ÄÄng kÃ½ xong (váº«n á» trang ÄÃ³), kiá»m tra cÃ¡c trÆ°á»ng
+        Assert.assertTrue(dangKyPage.isFieldReadOnly(By.id("id_trich_yeu")), "TrÆ°á»ng TrÃ­ch yáº¿u pháº£i á» cháº¿ Äá» Read-only.");
+        
+        // Kiá»m tra sá»± biáº¿n máº¥t cá»§a nÃºt LÆ°u/Há»§y
+        int saveButtons = driver.findElements(By.cssSelector("button[type='submit']")).size();
+        Assert.assertEquals(saveButtons, 0, "NÃºt 'LÆ°u' pháº£i bá» áº©n sau khi ÄÃ£ ÄÄng kÃ½ thÃ nh cÃ´ng.");
+        
+        // Kiá»m tra sá»± xuáº¥t hiá»n cá»§a nÃºt PhÃ¡t hÃ nh/LuÃ¢n chuyá»n (dÃ¹ng ID tá»« HTML)
+        boolean hasPhatHanh = driver.findElements(By.id("btn-phat-hanh-ben-ngoai")).size() > 0;
+        Assert.assertTrue(hasPhatHanh, "NÃºt 'PhÃ¡t hÃ nh bÃªn ngoÃ i' pháº£i xuáº¥t hiá»n sau khi ÄÄng kÃ½.");
+    }
+
+    @Test(description = "TC_CANCEL_01: Kiá»m tra nÃºt Há»§y (Reset form)")
+    public void TC_CANCEL_01_CancelRegistration() {
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
+        dangKyPage.openDirectRegistration();
+        
+        dangKyPage.inputTrichYeu("Dá»¯ liá»u táº¡m thá»i");
+        dangKyPage.clickHuy();
+        
+        // NÃºt Há»§y (reset) sáº½ xÃ³a text
+        Assert.assertEquals(driver.findElement(By.id("id_trich_yeu")).getAttribute("value"), "", 
+            "TrÆ°á»ng TrÃ­ch yáº¿u pháº£i bá» xÃ³a tráº¯ng sau khi nháº¥n Há»§y.");
+    }
+}

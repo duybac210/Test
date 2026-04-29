@@ -1,0 +1,337 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}He thong quan ly van ban dieu hanh{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="page-shell">
+        <header>
+            <div class="Thongtin">
+                <img src="{% static 'picture/logo.png' %}" alt="logo" style="width: 50px;">
+                <div class="Thongtin-text">
+                    <p id="tentruong">TRƯỜNG THPT NGUYỄN DỤC</p>
+                    <p id="tenhethong">HỆ THỐNG QUẢN LÝ VĂN BẢN ĐIỀU HÀNH</p>
+                </div>
+            </div>
+
+            <div
+                class="Name{% if personal_profile %} profile-trigger{% endif %}"
+                {% if personal_profile %}
+                    role="button"
+                    tabindex="0"
+                    data-open-profile="true"
+                {% endif %}
+            >
+                <div class="Name-text">
+                    <p id="name">{{ display_ho_ten|default:request.user.username|upper }}</p>
+                    <p id="chucvu">{{ display_chuc_vu|default:"NGUOI DUNG HE THONG"|upper }}</p>
+                </div>
+                <i class="bi bi-person-circle" style="color: rgb(255, 255, 255);"></i>
+            </div>
+        </header>
+
+        <div class="taskbar-top">
+            {% if ui_permissions.can_follow_condition %}
+                <a class="combo-button{% if active_menu == 'follow_condition' %} active{% endif %}" href="{% url 'theo_doi_tinh_trang' %}">
+                    <i class="bi bi-clipboard2-check"></i>
+                    <label>Theo dõi tình trạng</label>
+                </a>
+            {% endif %}
+
+            {% if ui_permissions.can_view_incoming_outgoing %}
+                <a class="combo-button{% if active_menu == 'incoming_text' %} active{% endif %}" href="{% url 'danh_sach_van_ban_den' %}">
+                    <i class="bi bi-file-earmark-plus"></i>
+                    <label>văn bản đến</label>
+                </a>
+
+                <a class="combo-button{% if active_menu == 'outgoing_text' %} active{% endif %}" href="{% url 'danh_sach_van_ban_di' %}">
+                    <i class="bi bi-file-earmark-minus"></i>
+                    <label>Văn bản đi</label>
+                </a>
+            {% endif %}
+
+            {% if ui_permissions.can_create_document %}
+                <a class="combo-button{% if active_menu == 'create_text' %} active{% endif %}" href="{% url 'tao_van_ban' %}">
+                    <i class="bi bi-file-earmark-word"></i>
+                    <label>Tạo văn bản</label>
+                </a>
+            {% endif %}
+
+            {% if ui_permissions.can_manage_work %}
+                <a class="combo-button{% if active_menu == 'work_management' %} active{% endif %}" href="{% url 'duyet_van_ban' %}">
+                    <i class="bi bi-briefcase"></i>
+                    <label>Quản lý công việc</label>
+                </a>
+            {% endif %}
+
+            {% if ui_permissions.can_personal_work %}
+                <a class="combo-button{% if active_menu == 'personal_work' %} active{% endif %}" href="{% url 'van_ban_xu_ly_ca_nhan' %}">
+                    <i class="bi bi-person-workspace"></i>
+                    <label>Công việc cá nhân</label>
+                </a>
+            {% endif %}
+
+            {% if ui_permissions.can_document_list %}
+                <a class="combo-button{% if active_menu == 'document_list' %} active{% endif %}" href="{% url 'van_ban_da_ban_hanh' %}">
+                    <i class="bi bi-layout-text-sidebar-reverse"></i>
+                    <label>Danh sách văn bản</label>
+                </a>
+            {% endif %}
+
+            {% if ui_permissions.can_template_text %}
+                <a class="combo-button{% if active_menu == 'template_text' %} active{% endif %}" href="{% url 'danh_sach_mau_van_ban' %}">
+                    <i class="bi bi-menu-button-wide-fill"></i>
+                    <label>Mẫu văn bản</label>
+                </a>
+            {% endif %}
+
+            {% if ui_permissions.can_manage_accounts %}
+                <a class="combo-button{% if active_menu == 'account_management' %} active{% endif %}" href="{% url 'danh_sach_nguoi_dung' %}">
+                    <i class="bi bi-people-fill"></i>
+                    <label>Quản lý tài khoản</label>
+                </a>
+            {% endif %}
+            {% if ui_permissions.can_manage_recipients %}
+                <a class="combo-button{% if active_menu == 'recipient_management' %} active{% endif %}" href="{% url 'danh_sach_noi_nhan' %}">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    <label>Quản lý nơi nhận</label>
+                </a>
+            {% endif %}
+        </div>
+
+        <div class="container">
+            <div class="danhmuc">
+                <div id="tieudedanhmuc">
+                    <i class="bi bi-list-ul"></i>
+                    <label>Danh mục</label>
+                </div>
+
+                {% block sidebar %}{% endblock %}
+
+                <a class="combo-button" id="logout" href="{% url 'logout' %}">
+                    <i class="bi bi-box-arrow-left"></i>
+                    <label>Đăng xuất</label>
+                </a>
+            </div>
+
+            <div class="main-body">
+                {% if messages %}
+                    <div class="page-messages">
+                        {% for message in messages %}
+                            <div class="page-message {{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+
+        <footer class="page-footer">@Thuc hien boi nhom 3</footer>
+    </div>
+
+    <div id="logout-confirm-modal" class="logout-modal-overlay hidden">
+        <div class="logout-modal" role="dialog" aria-modal="true" aria-labelledby="logout-confirm-title">
+            <div class="logout-modal-header" id="logout-confirm-title">Xác nhận đăng xuất</div>
+            <div class="logout-modal-body">
+                <div class="logout-icon-wrap">
+                    <div class="logout-icon-circle">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </div>
+                </div>
+                <p>Bạn có chắc muốn đăng xuất không?</p>
+                <div class="logout-actions">
+                    <button type="button" id="logout-cancel-button" class="logout-btn">Hủy</button>
+                    <a id="logout-confirm-button" class="logout-btn" href="{% url 'logout' %}">Đăng xuất</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if personal_profile %}
+        <div
+            id="personal-profile-root"
+            class="profile-modal-root"
+            data-update-url="{% url 'cap_nhat_ho_so_ca_nhan' %}"
+            data-change-password-url="{% url 'doi_mat_khau_ca_nhan' %}"
+            data-csrf-token="{{ csrf_token }}"
+        >
+            <div id="personal-profile-modal" class="profile-modal-overlay hidden">
+                <div class="profile-modal-box">
+                    <div class="profile-modal-header">
+                        <span>THÔNG TIN CÁ NHÂN</span>
+                        <button class="profile-modal-close" type="button" data-close-profile="personal-profile-modal">&#x2715;</button>
+                    </div>
+                    <div class="profile-modal-body">
+                        <div class="profile-form-group">
+                            <label for="profile-ma-gv">Mã giáo viên</label>
+                            <input type="text" id="profile-ma-gv" class="profile-input profile-readonly" value="{{ personal_profile.ma_gv }}" readonly>
+                        </div>
+                        <div class="profile-form-group">
+                            <label for="profile-ho-ten">Họ tên</label>
+                            <input type="text" id="profile-ho-ten" class="profile-input profile-readonly" value="{{ personal_profile.ho_ten }}" readonly>
+                        </div>
+                        <div class="profile-form-group">
+                            <label for="profile-last-login">Lần cuối đăng nhập</label>
+                            <input type="text" id="profile-last-login" class="profile-input profile-readonly" value="{{ personal_profile.lan_cuoi_dang_nhap }}" readonly>
+                        </div>
+                        <div class="profile-form-group">
+                            <label for="profile-group-display">Nhóm quyền</label>
+                            <input type="text" id="profile-group-display" class="profile-input profile-readonly" value="{{ personal_profile.nhom_quyen_display }}" readonly>
+                        </div>
+                        <div id="personal-profile-feedback" class="profile-feedback hidden"></div>
+                    </div>
+                    <div class="profile-modal-footer">
+                        <button type="button" id="btn-open-change-password" class="profile-btn profile-btn-secondary">Đổi mật khẩu</button>
+                        <button type="button" id="btn-edit-profile" class="profile-btn profile-btn-primary">Chỉnh sửa</button>
+                        <button type="button" id="btn-save-profile" class="profile-btn profile-btn-primary hidden">Lưu</button>
+                        <button type="button" id="btn-cancel-profile" class="profile-btn profile-btn-light hidden">Hủy</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="change-password-modal" class="profile-modal-overlay hidden">
+                <div class="profile-modal-box profile-modal-box-sm">
+                    <div class="profile-modal-header">
+                        <span>ĐỔI MẬT KHẨU</span>
+                        <button class="profile-modal-close" type="button" data-close-profile="change-password-modal">&#x2715;</button>
+                    </div>
+                    <div class="profile-modal-body">
+                        <div class="profile-form-group">
+                            <label for="old-password">Mật khẩu cũ</label>
+                            <input type="password" id="old-password" class="profile-input">
+                        </div>
+                        <div class="profile-form-group">
+                            <label for="new-password">Mật khẩu mới</label>
+                            <input type="password" id="new-password" class="profile-input">
+                        </div>
+                        <div class="profile-form-group">
+                            <label for="confirm-new-password">Nhập lại mật khẩu mới</label>
+                            <input type="password" id="confirm-new-password" class="profile-input">
+                        </div>
+                        <div id="change-password-feedback" class="profile-feedback hidden"></div>
+                    </div>
+                    <div class="profile-modal-footer">
+                        <button type="button" id="btn-save-password" class="profile-btn profile-btn-primary">Lưu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <script>
+        (function () {
+            const normalizeStatus = (value) =>
+                (value || "")
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase()
+                    .replace(/\s+/g, " ")
+                    .trim();
+
+            const getStatusTheme = (status) => {
+                const normalized = normalizeStatus(status);
+                if (!normalized) return "";
+                if (normalized.includes("ban hanh")) return "status-theme-published";
+                if (normalized.includes("hoan thanh") || normalized.includes("da duyet") || normalized.includes("da chinh sua")) {
+                    return "status-theme-done";
+                }
+                if (normalized.includes("dang chinh sua") || normalized.includes("cho chinh sua")) return "status-theme-edit";
+                if (normalized.includes("cho duyet") || normalized.includes("uy quyen")) return "status-theme-review";
+                if (normalized.includes("dang xu ly") || normalized.includes("cho luan chuyen")) return "status-theme-progress";
+                if (
+                    normalized.includes("cho phan cong") ||
+                    normalized.includes("cho xu ly") ||
+                    normalized.includes("du thao") ||
+                    normalized.includes("cho dang ky") ||
+                    normalized.includes("chua phan cong")
+                ) {
+                    return "status-theme-pending";
+                }
+                return "";
+            };
+
+            const applyStatusThemes = () => {
+                const selectors = [
+                    ".status-badge",
+                    '[data-col="trang-thai"]',
+                    'td.status-pending',
+                    'td.status-processing',
+                    'td.status-done'
+                ];
+                document.querySelectorAll(selectors.join(",")).forEach((element) => {
+                    const statusText = element.dataset.trangThai || element.textContent;
+                    const themeClass = getStatusTheme(statusText);
+                    const target = element.classList.contains("status-badge")
+                        ? element
+                        : element.querySelector(".status-badge") || element;
+                    target.classList.remove(
+                        "status-theme-pending",
+                        "status-theme-progress",
+                        "status-theme-review",
+                        "status-theme-edit",
+                        "status-theme-done",
+                        "status-theme-published"
+                    );
+                    if (themeClass) {
+                        target.classList.add(themeClass);
+                    }
+                });
+            };
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", applyStatusThemes);
+            } else {
+                applyStatusThemes();
+            }
+            window.applyStatusThemes = applyStatusThemes;
+        })();
+    </script>
+    <script>
+        (function () {
+            const logoutLink = document.getElementById("logout");
+            const logoutModal = document.getElementById("logout-confirm-modal");
+            const cancelButton = document.getElementById("logout-cancel-button");
+
+            if (!logoutLink || !logoutModal || !cancelButton) {
+                return;
+            }
+
+            function closeLogoutModal() {
+                logoutModal.classList.remove("show");
+                logoutModal.classList.add("hidden");
+            }
+
+            logoutLink.addEventListener("click", function (event) {
+                event.preventDefault();
+                logoutModal.classList.remove("hidden");
+                logoutModal.classList.add("show");
+            });
+
+            cancelButton.addEventListener("click", closeLogoutModal);
+
+            logoutModal.addEventListener("click", function (event) {
+                if (event.target === logoutModal) {
+                    closeLogoutModal();
+                }
+            });
+
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "Escape" && logoutModal.classList.contains("show")) {
+                    closeLogoutModal();
+                }
+            });
+        })();
+    </script>
+
+    {% block extra_js %}{% endblock %}
+    {% if personal_profile %}
+        <script src="{% static 'js/profile_modal.js' %}"></script>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Quan ly noi nhan{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/quan_ly_tai_khoan.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button active" href="{% url 'danh_sach_noi_nhan' %}">
+        <label>Danh sách nơi nhận</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div
+        class="account-page"
+        data-mode="recipient-list"
+        data-create-url="{% url 'them_noi_nhan' %}"
+        data-update-url-template="{% url 'cap_nhat_noi_nhan' '__recipient_id__' %}"
+        data-csrf-token="{{ csrf_token }}"
+    >
+        <div class="page-toolbar">
+            <button class="btn-inline btn-add-teacher" type="button" id="btn-open-create-recipient">
+                <i class="bi bi-geo-alt-fill"></i>
+                <span>Thêm nơi nhận</span>
+            </button>
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tìm theo tên nơi nhận, địa chỉ, SĐT, gmail...">
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Tên nơi nhận</th>
+                        <th>Địa chỉ</th>
+                        <th>SĐT</th>
+                    </tr>
+                </thead>
+                <tbody id="recipient-table-body">
+                    {% for recipient in recipient_list %}
+                        {% include "partials/noi_nhan_row.html" with recipient=recipient %}
+                    {% empty %}
+                        <tr class="empty-row">
+                            <td colspan="3">Chưa có nơi nhận nào.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="create-recipient-modal" class="modal-overlay hidden">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <span>THÊM NƠI NHẬN</span>
+                    <button class="modal-close" type="button" data-close-modal="create-recipient-modal">&#x2715;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-form-group">
+                        <label for="create-ten-noi-nhan">Tên nơi nhận:</label>
+                        <input type="text" id="create-ten-noi-nhan" class="modal-input">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="create-dia-chi">Địa chỉ:</label>
+                        <input type="text" id="create-dia-chi" class="modal-input">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="create-so-dien-thoai">Số điện thoại:</label>
+                        <input type="text" id="create-so-dien-thoai" class="modal-input">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="create-gmail">Gmail:</label>
+                        <input type="email" id="create-gmail" class="modal-input">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="create-thong-tin-khac">Thông tin khác:</label>
+                        <textarea id="create-thong-tin-khac" class="modal-input"></textarea>
+                    </div>
+                    <div id="create-recipient-feedback" class="modal-feedback hidden"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-modal btn-luu" type="button" id="btn-save-create-recipient">Lưu</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="recipient-detail-modal" class="modal-overlay hidden">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <span>CHI TIẾT NƠI NHẬN</span>
+                    <button class="modal-close" type="button" data-close-modal="recipient-detail-modal">&#x2715;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-form-group">
+                        <label for="detail-ma-noi-nhan">Mã nơi nhận:</label>
+                        <input type="text" id="detail-ma-noi-nhan" class="modal-input bg-gray" readonly>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-ten-noi-nhan">Tên nơi nhận:</label>
+                        <input type="text" id="detail-ten-noi-nhan" class="modal-input bg-gray" readonly>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-dia-chi">Địa chỉ:</label>
+                        <input type="text" id="detail-dia-chi" class="modal-input bg-gray" readonly>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-so-dien-thoai">Số điện thoại:</label>
+                        <input type="text" id="detail-so-dien-thoai" class="modal-input bg-gray" readonly>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-gmail">Gmail:</label>
+                        <input type="email" id="detail-gmail" class="modal-input bg-gray" readonly>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="detail-thong-tin-khac">Thông tin khác:</label>
+                        <textarea id="detail-thong-tin-khac" class="modal-input bg-gray" readonly></textarea>
+                    </div>
+                    <div id="recipient-modal-feedback" class="modal-feedback hidden"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-modal btn-sua" type="button" id="btn-edit-recipient">Chỉnh sửa</button>
+                    <button class="btn-modal btn-luu hidden" type="button" id="btn-save-recipient">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/quan_ly_noi_nhan.js' %}"></script>
+{% endblock %}

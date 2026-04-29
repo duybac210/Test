@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Danh sach van ban{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/danh_sach_van_ban_tong_hop.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button{% if is_published_document_list %} active{% endif %}" id="vanbandabanhanh" href="{% url 'van_ban_da_ban_hanh' %}">
+        <label>Đã ban hành</label>
+    </a>
+    {% if ui_permissions.can_document_list_created %}
+        <a class="combo-button{% if is_created_document_list %} active{% endif %}" id="vanbandatao" href="{% url 'van_ban_da_tao' %}">
+            <label>Đã tạo</label>
+        </a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <div class="document-catalog-page" data-can-edit="{% if can_edit_published_documents %}1{% else %}0{% endif %}">
+        <div class="search-bar">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tim theo so van ban, so ky hieu, trich yeu...">
+            </div>
+            <button class="btn-xem" type="button" id="search-button">Xem</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Ngày ban hành</th>
+                        <th>Số văn bản</th>
+                        <th>Loại văn bản</th>
+                        <th>Số ký hiệu</th>
+                        <th>Trích yếu</th>
+                        <th>Nguồn</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="catalog-table-body">
+                    {% for document in documents %}
+                        <tr
+                            data-record-id="{{ document.record_id }}"
+                            data-loai="{{ document.loai }}"
+                            data-ngay-ban-hanh="{{ document.ngay_ban_hanh_display }}"
+                            data-so-van-ban="{{ document.so_van_ban }}"
+                            data-loai-vb="{{ document.ten_loai_vb }}"
+                            data-so-ky-hieu="{{ document.so_ky_hieu }}"
+                            data-trich-yeu="{{ document.trich_yeu }}"
+                            data-nguon="{{ document.nguon }}"
+                            data-co-quan-ban-hanh="{{ document.co_quan_ban_hanh }}"
+                            data-trang-thai="{{ document.trang_thai }}"
+                            data-file-name="{{ document.file_name }}"
+                            data-file-url="{{ document.file_url }}"
+                            data-edit-url="{{ document.edit_url|default:'' }}"
+                        >
+                            <td class="text-center">{{ document.stt }}</td>
+                            <td>{{ document.ngay_ban_hanh_display }}</td>
+                            <td>{{ document.so_van_ban }}</td>
+                            <td>{{ document.ten_loai_vb }}</td>
+                            <td>{{ document.so_ky_hieu }}</td>
+                            <td>{{ document.trich_yeu }}</td>
+                            <td>{{ document.nguon }}</td>
+                            <td class="text-center"><span class="status-badge">{{ document.trang_thai }}</span></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="8" class="empty-state">Không có văn bản nào trong danh mục này.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="catalog-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>CHI TIẾT VĂN BẢN</span>
+                <button type="button" class="close-btn" id="close-catalog-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group"><label>Số văn bản:</label><input type="text" id="c-so-van-ban" readonly></div>
+                    <div class="form-group"><label>Ngày ban hành:</label><input type="text" id="c-ngay-ban-hanh" readonly></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Loại văn bản:</label><input type="text" id="c-loai-vb" readonly></div>
+                    <div class="form-group"><label>Số ký hiệu:</label><input type="text" id="c-so-ky-hieu" readonly></div>
+                </div>
+                <div class="form-group-full"><label>Trích yếu:</label><textarea id="c-trich-yeu" rows="4" readonly></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Nguồn:</label><input type="text" id="c-nguon" readonly></div>
+                    <div class="form-group"><label>Trạng thái:</label><input type="text" id="c-trang-thai" readonly></div>
+                </div>
+                <div class="form-group-full"><label>Cơ quan ban hành:</label><input type="text" id="c-co-quan-ban-hanh" readonly></div>
+                <div class="form-group-full file-input">
+                    <label>File văn bản:</label>
+                    <div class="file-input-wrapper">
+                        <a id="c-file-link" class="file-link disabled" href="#" target="_blank" rel="noopener noreferrer" download>
+                            <input type="text" id="c-file-name" readonly>
+                        </a>
+                        <span class="btn-icon"><i class="bi bi-download"></i></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    {% if can_edit_published_documents %}
+                        <a id="c-edit-link" class="btn-primary hidden" href="#">Chỉnh sửa</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/danh_sach_van_ban_tong_hop.js' %}"></script>
+{% endblock %}

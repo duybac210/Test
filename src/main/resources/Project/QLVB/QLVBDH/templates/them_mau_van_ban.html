@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Them mau van ban{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/them_mau_van_ban.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+    <a class="combo-button" id="qlvb" href="{% url 'danh_sach_mau_van_ban' %}">
+        <label>Quản lý mẫu văn bản</label>
+    </a>
+    <a class="combo-button active" id="tmvb" href="{% url 'them_mau_van_ban' %}">
+        <label>Thêm mẫu văn bản</label>
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="document-wrapper">
+        <div class="form-container">
+            <form id="template-form" method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="ma-mau-vb">Mã mẫu văn bản:</label>
+                    <div class="field-wrap">
+                        <input id="ma-mau-vb" type="text" value="{{ next_ma_mau_vb }}" readonly class="form-control bg-gray">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ngay-tao">Ngày tạo:</label>
+                    <div class="field-wrap">
+                        {{ form.ngay_tao }}
+                        {{ form.ngay_tao.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ten-mau">Tên mẫu:</label>
+                    <div class="field-wrap">
+                        {{ form.ten_mau }}
+                        {{ form.ten_mau.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="loai-van-ban-mau">Loại văn bản:</label>
+                    <div class="field-wrap">
+                        {{ form.ma_loai_vb }}
+                        {{ form.ma_loai_vb.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="trang-thai-mau">Trạng thái mẫu:</label>
+                    <div class="field-wrap">
+                        {{ form.trang_thai }}
+                        {{ form.trang_thai.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="muc-dich">Mục đích:</label>
+                    <div class="field-wrap">
+                        {{ form.muc_dich }}
+                        {{ form.muc_dich.errors }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="template-file-name">Tải lên mẫu:</label>
+                    <div class="field-wrap">
+                        <div class="file-input-wrapper" id="template-file-trigger">
+                            <input id="template-file-name" type="text" value="Nhấn để tải file mẫu" readonly class="form-control bg-gray">
+                            <button type="button" class="btn-icon" aria-label="Chon file mau">
+                                <i class="bi bi-file-earmark-break"></i>
+                            </button>
+                        </div>
+                        {{ form.file_mau }}
+                        {{ form.file_mau.errors }}
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="page-feedback">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div class="form-actions">
+                    <button type="reset" class="btn-main btn-cancel" id="reset-template-form">Hủy</button>
+                    <button type="submit" class="btn-main">Lưu</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="preview-container">
+            <div class="preview-box">
+                <div id="preview-placeholder" class="preview-placeholder">Chưa có file mẫu để xem trước.</div>
+                <img id="preview-image" class="preview-element hidden" alt="Xem trước ảnh">
+                <iframe id="preview-pdf" class="preview-element hidden" title="Xem trước PDF"></iframe>
+                <div id="preview-message" class="preview-message hidden"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/them_mau_van_ban.js' %}"></script>
+{% endblock %}
