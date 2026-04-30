@@ -35,7 +35,7 @@ public class ManHinhDangKyVanBanDi {
     private By displayTrangThai = By.id("display_trang_thai");
     private By displayLoaiVB = By.id("display_loai_vb");
     private By displayNgayBanHanh = By.id("display_ngay_ban_hanh");
-    private By successMessage = By.cssSelector(".alert-success, .success-message, .alert.alert-primary");
+    private By successMessage = By.cssSelector(".page-message.success, .alert-success, .success-message, .alert.alert-primary");
     private By btnXemVBDi = By.id("xemvbd");
 
     public ManHinhDangKyVanBanDi(WebDriver driver) {
@@ -208,9 +208,12 @@ public class ManHinhDangKyVanBanDi {
         element.sendKeys(filePath);
     }
 
-    public void uploadTepDinhKem(String filePath) {
+    // SỬA Ở ĐÂY: Hỗ trợ upload nhiều file cùng lúc (varargs)
+    public void uploadTepDinhKem(String... filePaths) {
         WebElement element = driver.findElement(tepDinhKemInput);
-        element.sendKeys(filePath);
+        // Nối các đường dẫn file lại bằng ký tự xuống dòng (\n)
+        String combinedPaths = String.join("\n", filePaths);
+        element.sendKeys(combinedPaths);
     }
 
     public void clickLuu() {
@@ -407,5 +410,28 @@ public class ManHinhDangKyVanBanDi {
             System.out.println("    [DEBUG] Không tìm thấy bản ghi nào trong danh sách.");
             return "VBO00000000";
         }
+    }
+
+    // ==========================================
+    // CÁC HÀM LẤY DỮ LIỆU TỪ GIAO DIỆN (GETTERS)
+    // ==========================================
+
+    /** Dành cho TC_15_CANCEL: Lấy giá trị đang hiển thị trong ô Trích yếu */
+    public String getTrichYeuValue() {
+        return driver.findElement(trichYeuInput).getAttribute("value");
+    }
+
+    /** Dành cho TC_08_CONC: Đếm số lượng văn bản có cùng trích yếu trong danh sách */
+    public int countDocumentsInList(String trichYeu) {
+        driver.get("http://127.0.0.1:8000/van-ban-di/");
+        return driver.findElements(By.xpath("//tr[contains(., '" + trichYeu + "')]")).size();
+    }
+
+    /** Dành cho TC_25_FILE: Đếm số lượng tệp đính kèm đã hiển thị thành công */
+    public int getUploadedFilesCount() {
+        // Đợi 1 chút để DOM cập nhật thay vì phải viết vòng lặp for bên file Test
+        try { Thread.sleep(1000); } catch (InterruptedException ignored) {} 
+        List<WebElement> files = driver.findElements(By.cssSelector(".file-item, .attachment-name, .file-list li, .text-primary, .uploaded-file"));
+        return files.size();
     }
 }

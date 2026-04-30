@@ -833,113 +833,124 @@ public class TC_DangKyVanBanDi {
     // NHÓM 14: KIỂM TRA FILE (OFFICIAL & ATTACHMENTS)
     // ==========================================
 
-    @Test(description = "TC_FILE_01: Kiểm tra các ràng buộc cho Bản chính thức (Bắt Bug Bảo Mật)")
-    public void TC_FILE_01_OfficialFileValidation() {
-        System.out.println(">>> BẮT ĐẦU TC_FILE_01");
+    @Test(description = "TC_FILE_01A: Bắt buộc upload Bản chính thức")
+    public void TC_FILE_01A_EmptyFileValidation() {
+        System.out.println(">>> BẮT ĐẦU TC_FILE_01A: Bỏ trống file upload");
         Utilities.loginAs(CLERK_USER, CLERK_PASS);
-
-        // ==========================================
-        // STEP 1: KHÔNG UPLOAD FILE VÀ NHẤN LƯU
-        // ==========================================
-        System.out.println("Step 1: Không upload file và nhấn Lưu.");
         dangKyPage.openDirectRegistration();
 
-        // Điền các trường bắt buộc
-        dangKyPage.inputNgayKy("2026-04-28");
-        dangKyPage.selectLoaiVanBan("LVB0000013");
-        dangKyPage.selectMucDo("MD00000001");
-        dangKyPage.selectNguoiTao(TEACHER_USER);
-        dangKyPage.selectNguoiKy(HT_USER);
-        dangKyPage.inputNoiNhan("Phòng Test");
-        dangKyPage.inputTrichYeu("Test file validation EMPTY");
+        System.out.println("  [STEP 1] Điền thông tin hợp lệ nhưng KHÔNG đính kèm Bản chính thức");
+        fillValidDataExceptFile("Test file validation EMPTY - " + System.currentTimeMillis());
 
+        System.out.println("  [STEP 2] Nhấn Lưu và lấy thông báo lỗi");
         dangKyPage.clickLuu();
+
         String errorsEmpty = dangKyPage.getValidationErrors();
+        System.out.println("  [CHECK] URL sau khi lưu: " + driver.getCurrentUrl());
+        System.out.println("  [CHECK] Text lỗi thu được từ giao diện: '" + errorsEmpty + "'");
 
-        System.out.println("  [CHECK] Mong đợi: Chặn lưu khi không upload bản chính thức.");
-        System.out.println("  [CHECK] Thực tế: Lỗi hiển thị = \"" + errorsEmpty + "\"");
-        Assert.assertTrue(errorsEmpty != null && !errorsEmpty.trim().isEmpty(),
-                "Phải chặn lưu và hiển thị lỗi khi không upload bản chính thức.");
+        // CẢI TIẾN: Nếu không có lỗi, lấy thông báo thành công in ra luôn
+        if (errorsEmpty == null || errorsEmpty.trim().isEmpty()) {
+            String actualMsg = dangKyPage.getSuccessMessage();
+            Assert.fail("LỖI: Bỏ trống file nhưng hệ thống không chặn! Giao diện đang hiển thị: '" + actualMsg + "' | URL: " + driver.getCurrentUrl());
+        }
+        System.out.println(">>> KẾT THÚC TC_FILE_01A: PASS");
+    }
 
-        // ==========================================
-        // STEP 2: UPLOAD FILE .EXE (BẮT LỖI BẢO MẬT)
-        // ==========================================
-        System.out.println("Step 2: Upload file sai định dạng (.exe).");
-        driver.navigate().refresh();
+    @Test(description = "TC_FILE_01B: Chặn upload file thực thi (.exe) để bảo mật")
+    public void TC_FILE_01B_ExeFileSecurity() {
+        System.out.println(">>> BẮT ĐẦU TC_FILE_01B: Upload file .exe");
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
         dangKyPage.openDirectRegistration();
 
-        // Điền lại form để vượt qua validation các trường text
-        dangKyPage.inputNgayKy("2026-04-28");
-        dangKyPage.selectLoaiVanBan("LVB0000013");
-        dangKyPage.selectMucDo("MD00000001");
-        dangKyPage.selectNguoiTao(TEACHER_USER);
-        dangKyPage.selectNguoiKy(HT_USER);
-        dangKyPage.inputNoiNhan("Phòng Test");
-        dangKyPage.inputTrichYeu("Test file validation EXE");
-
-        // Upload file exe
+        System.out.println("  [STEP 1] Điền thông tin hợp lệ và đính kèm file 'virus.exe'");
+        fillValidDataExceptFile("Test Security EXE - " + System.currentTimeMillis());
         dangKyPage.uploadBanChinhThuc(createTempFile("virus.exe", "Malicious content"));
+
+        System.out.println("  [STEP 2] Nhấn Lưu và chờ hệ thống phản hồi (tối đa 15s)...");
         dangKyPage.clickLuu();
 
-        // Chờ 2.5 giây để xem Backend xử lý thế nào
-        try { Thread.sleep(2500); } catch (Exception ignored) {}
-
-        // BẮT LỖI TÍCH CỰC: Kiểm tra xem có bị bypass không
-        String currentUrlExe = driver.getCurrentUrl();
-        String msgExe = dangKyPage.getSuccessMessage().toLowerCase();
-        boolean isBypassedExe = !currentUrlExe.endsWith("/dang-ky/")
-                || msgExe.contains("thành công")
-                || msgExe.contains("đã đăng ký");
-
-        if (isBypassedExe) {
-            Assert.fail("BUG BẢO MẬT NGHIÊM TRỌNG: Hệ thống chấp nhận file .exe, báo LƯU THÀNH CÔNG và chuyển trang! URL hiện tại: " + currentUrlExe);
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        try {
+            wait.until(d -> {
+                String err = dangKyPage.getValidationErrors();
+                return (err != null && !err.trim().isEmpty()) || !d.getCurrentUrl().endsWith("/dang-ky/");
+            });
+        } catch (org.openqa.selenium.TimeoutException e) {
+            System.out.println("  [CẢNH BÁO] Đã hết 15s chờ đợi.");
         }
 
-        // Nếu web có chặn (không bị bypass), kiểm tra xem có thông báo lỗi hiển thị không
-        String errorsFormat = dangKyPage.getValidationErrors();
-        Assert.assertTrue(errorsFormat != null && !errorsFormat.trim().isEmpty(),
-                "Hệ thống có chặn file .exe nhưng KHÔNG hiển thị thông báo lỗi nào cho người dùng.");
+        String currentUrl = driver.getCurrentUrl();
+        String actualMsg = dangKyPage.getSuccessMessage(); // Giữ nguyên Text gốc để in log
+        String msgLower = actualMsg.toLowerCase();
 
-        // ==========================================
-        // STEP 3: UPLOAD FILE QUÁ DUNG LƯỢNG (VD: 25MB)
-        // ==========================================
-        System.out.println("Step 3: Upload file quá dung lượng (ví dụ 25MB).");
-        driver.navigate().refresh();
+        System.out.println("  [STEP 3] Kiểm tra xem hệ thống có bị Bypass (cho phép lưu) không?");
+        System.out.println("    - URL hiện tại: " + currentUrl);
+        System.out.println("    - Msg giao diện hiển thị: '" + actualMsg + "'");
+
+        boolean isBypassed = !currentUrl.endsWith("/dang-ky/") || msgLower.contains("thành công") || msgLower.contains("đã đăng ký") || msgLower.contains("da dang ky");
+
+        // CẢI TIẾN: In thẳng Text lấy được vào log
+        if (isBypassed) {
+            Assert.fail("BUG BẢO MẬT: Chấp nhận lưu file .exe! Hệ thống đang báo: '" + actualMsg + "' | URL: " + currentUrl);
+        }
+
+        System.out.println("  [STEP 4] Hệ thống có chặn, nhưng UI có hiển thị lỗi cho User biết không?");
+        String errorsFormat = dangKyPage.getValidationErrors();
+        System.out.println("    - Text lỗi thu được từ UI: '" + errorsFormat + "'");
+
+        // CẢI TIẾN: Nếu không có text lỗi, in ra giao diện đang thực sự hiện chữ gì
+        if (errorsFormat == null || errorsFormat.trim().isEmpty()) {
+            Assert.fail("LỖI: Chặn file .exe nhưng KHÔNG báo lỗi. Giao diện hiện tại đang hiển thị: '" + actualMsg + "'");
+        }
+        System.out.println(">>> KẾT THÚC TC_FILE_01B: PASS");
+    }
+
+    @Test(description = "TC_FILE_01C: Chặn upload file vượt quá dung lượng quy định (25MB)")
+    public void TC_FILE_01C_OversizedFile() {
+        System.out.println(">>> BẮT ĐẦU TC_FILE_01C: Upload file quá dung lượng (25MB)");
+        Utilities.loginAs(CLERK_USER, CLERK_PASS);
         dangKyPage.openDirectRegistration();
 
-        // Điền lại form
-        dangKyPage.inputNgayKy("2026-04-28");
-        dangKyPage.selectLoaiVanBan("LVB0000013");
-        dangKyPage.selectMucDo("MD00000001");
-        dangKyPage.selectNguoiTao(TEACHER_USER);
-        dangKyPage.selectNguoiKy(HT_USER);
-        dangKyPage.inputNoiNhan("Phòng Test");
-        dangKyPage.inputTrichYeu("Test file validation SIZE");
+        System.out.println("  [STEP 1] Điền thông tin hợp lệ và đính kèm file PDF nặng 25MB");
+        fillValidDataExceptFile("Test Size Limit - " + System.currentTimeMillis());
+        dangKyPage.uploadBanChinhThuc(createLargeFile("large_test.pdf", 25));
 
-        // Upload file lớn
-        dangKyPage.uploadBanChinhThuc(createLargeFile("large.pdf", 25));
+        System.out.println("  [STEP 2] Nhấn Lưu và chờ hệ thống phản hồi (tối đa 15s)...");
         dangKyPage.clickLuu();
 
-        // Chờ 2.5 giây để hệ thống xử lý upload
-        try { Thread.sleep(2500); } catch (Exception ignored) {}
-
-        // BẮT LỖI TÍCH CỰC: Kiểm tra bypass
-        String currentUrlSize = driver.getCurrentUrl();
-        String msgSize = dangKyPage.getSuccessMessage().toLowerCase();
-        boolean isBypassedSize = !currentUrlSize.endsWith("/dang-ky/")
-                || msgSize.contains("thành công")
-                || msgSize.contains("đã đăng ký");
-
-        if (isBypassedSize) {
-            Assert.fail("BUG HỆ THỐNG: Chấp nhận file quá dung lượng quy định (25MB), báo LƯU THÀNH CÔNG và chuyển trang! URL hiện tại: " + currentUrlSize);
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        try {
+            wait.until(d -> {
+                String err = dangKyPage.getValidationErrors();
+                return (err != null && !err.trim().isEmpty()) || !d.getCurrentUrl().endsWith("/dang-ky/");
+            });
+        } catch (org.openqa.selenium.TimeoutException e) {
+            System.out.println("  [CẢNH BÁO] Đã hết 15s chờ đợi.");
         }
 
-        // Nếu web có chặn, kiểm tra thông báo lỗi
-        String errorsSize = dangKyPage.getValidationErrors();
-        Assert.assertTrue(errorsSize != null && !errorsSize.trim().isEmpty(),
-                "Hệ thống chặn file quá lớn nhưng KHÔNG hiển thị thông báo lỗi nào.");
+        String currentUrl = driver.getCurrentUrl();
+        String actualMsg = dangKyPage.getSuccessMessage();
+        String msgLower = actualMsg.toLowerCase();
 
-        System.out.println(">>> KẾT THÚC TC_FILE_01: PASS");
+        System.out.println("  [STEP 3] Kiểm tra xem hệ thống có bị Bypass (cho phép lưu) không?");
+        System.out.println("    - URL hiện tại: " + currentUrl);
+        System.out.println("    - Msg giao diện hiển thị: '" + actualMsg + "'");
+
+        boolean isBypassed = !currentUrl.endsWith("/dang-ky/") || msgLower.contains("thành công") || msgLower.contains("đã đăng ký") || msgLower.contains("da dang ky");
+
+        if (isBypassed) {
+            Assert.fail("BUG HỆ THỐNG: Chấp nhận file quá dung lượng (25MB)! Hệ thống đang báo: '" + actualMsg + "' | URL: " + currentUrl);
+        }
+
+        System.out.println("  [STEP 4] Hệ thống có chặn, nhưng UI có hiển thị lỗi dung lượng cho User biết không?");
+        String errorsSize = dangKyPage.getValidationErrors();
+        System.out.println("    - Text lỗi thu được từ UI: '" + errorsSize + "'");
+
+        if (errorsSize == null || errorsSize.trim().isEmpty()) {
+            Assert.fail("LỖI: Chặn file lớn nhưng KHÔNG báo lỗi cho User. Giao diện hiện tại đang hiển thị: '" + actualMsg + "'");
+        }
+        System.out.println(">>> KẾT THÚC TC_FILE_01C: PASS");
     }
 
     @Test(description = "TC_FILE_02: Kiểm tra Tệp đính kèm")
@@ -995,6 +1006,19 @@ public class TC_DangKyVanBanDi {
     // ==========================================
     // CÁC HÀM PHỤ TRỢ (HELPER METHODS)
     // ==========================================
+    /**
+     * Helper: Điền toàn bộ thông tin hợp lệ vào form Đăng ký văn bản đi,
+     * NGOẠI TRỪ tệp đính kèm (Bản chính thức).
+     */
+    private void fillValidDataExceptFile(String trichYeu) {
+        dangKyPage.inputNgayKy("2026-04-28");
+        dangKyPage.selectLoaiVanBan("LVB0000013");
+        dangKyPage.selectMucDo("MD00000001");
+        dangKyPage.selectNguoiTao(TEACHER_USER);
+        dangKyPage.selectNguoiKy(HT_USER);
+        dangKyPage.inputNoiNhan("Phòng Test Automation");
+        dangKyPage.inputTrichYeu(trichYeu);
+    }
 
     private String createTempFile(String fileName, String content) {
         try {
@@ -1093,3 +1117,4 @@ public class TC_DangKyVanBanDi {
         return numeric.isEmpty() ? 0 : Integer.parseInt(numeric);
     }
 }
+
