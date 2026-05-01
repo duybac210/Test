@@ -3,9 +3,9 @@
 <suite name="Sequential Suite" parallel="none">
     <test name="Registration Tests">
         <classes>
-            <class name="testcases.TC_DKVanBanDi"/>
-            <class name="testcases.TC_DangKyVanBanDenTest"/>
             <class name="testcases.vanbandenlist_test"/>
+            <class name="testcases.TC_DangKyVanBanDenTest"/>
+            <class name="testcases.TC_DKVanBanDi"/>
         </classes>
     </test>
 </suite>
