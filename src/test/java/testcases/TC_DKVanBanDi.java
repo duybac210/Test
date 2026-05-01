@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 
-public class TC_DangKyVanBanDi_clone {
+public class TC_DKVanBanDi {
     private WebDriver driver;
     private WebDriverWait wait;
     private ManHinhDangKyVanBanDi dangKyPage;
