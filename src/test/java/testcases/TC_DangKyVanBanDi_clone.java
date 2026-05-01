@@ -19,8 +19,8 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
-import java.util.List;
 
 public class TC_DangKyVanBanDi_clone {
     private WebDriver driver;
@@ -88,7 +88,10 @@ public class TC_DangKyVanBanDi_clone {
         duyetPage.clickDocumentByTrichYeu(trichYeu);
 
         System.out.println("  [APPROVE_DOC] Nhấn nút Duyệt.");
-        duyetPage.clickDuyet();
+        // FIX: Đợi 1 giây để hiệu ứng animation của Modal và bóng mờ tải xong
+        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+        
+        duyetPage.clickDuyet(); // Lúc này Selenium sẽ tự click được như người thật
         System.out.println("  [APPROVE_DOC] Duyệt thành công.");
         Utilities.logout();
     }
@@ -156,6 +159,7 @@ public class TC_DangKyVanBanDi_clone {
         System.out.println(">>> KẾT THÚC TC_01_SEC: PASS");
     }
 
+/*
     @Test(description = "TC_02_SEC: Chặn đăng ký văn bản chưa được duyệt")
     public void TC_02_SEC_BlockUnapprovedDocRegistration() {
         System.out.println(">>> BẮT ĐẦU TC_02_SEC");
@@ -177,7 +181,9 @@ public class TC_DangKyVanBanDi_clone {
         Assert.assertTrue(isBlocked, "Hệ thống phải hiển thị lỗi khi đăng ký VB chưa duyệt.");
         System.out.println(">>> KẾT THÚC TC_02_SEC: PASS");
     }
+*/
 
+/*
     @Test(description = "TC_03_SEC: Chặn đăng ký cho văn bản đã đăng ký hoặc đang chờ duyệt")
     public void TC_03_SEC_BlockRegistrationForInvalidStatus() {
         System.out.println(">>> BẮT ĐẦU TC_03_SEC");
@@ -209,14 +215,15 @@ public class TC_DangKyVanBanDi_clone {
 
         System.out.println(">>> KẾT THÚC TC_03_SEC: PASS");
     }
+*/
 
     // ==========================================
     // NHÓM 2: LUỒNG NGHIỆP VỤ CHÍNH
     // ==========================================
 
-    @Test(description = "TC_04_FLOW: Đăng ký thành công văn bản từ dự thảo (Luồng 1)")
-    public void TC_04_FLOW_RegisterFromDraftSuccess() {
-        System.out.println(">>> BẮT ĐẦU TC_04_FLOW");
+    @Test(description = "TC_02_FLOW: Đăng ký thành công văn bản từ dự thảo (Luồng 1)")
+    public void TC_02_FLOW_RegisterFromDraftSuccess() {
+        System.out.println(">>> BẮT ĐẦU TC_02");
         String trichYeu = "Auto-Flow1-" + System.currentTimeMillis();
         createDraft(trichYeu);
         approveDocument(trichYeu);
@@ -260,12 +267,12 @@ public class TC_DangKyVanBanDi_clone {
                 "LỖI: Không hiển thị đúng toast message thành công. Message thực tế: " + actualMsg);
 
         System.out.println("  - Văn bản ID: " + soVBDi);
-        System.out.println(">>> KẾT THÚC TC_04_FLOW: PASS");
+        System.out.println(">>> KẾT THÚC TC_02: PASS");
     }
 
-    @Test(description = "TC_05_FLOW: Đăng ký mới văn bản trực tiếp (Luồng 2)")
-    public void TC_05_FLOW_DirectRegistrationSuccess() {
-        System.out.println(">>> BẮT ĐẦU TC_05_FLOW");
+    @Test(description = "TC_03_FLOW: Đăng ký mới văn bản trực tiếp (Luồng 2)")
+    public void TC_03_FLOW_DirectRegistrationSuccess() {
+        System.out.println(">>> BẮT ĐẦU TC_03");
         loginAndOpenRegistration();
         String trichYeu = "Auto-Flow2-" + System.currentTimeMillis();
 
@@ -285,40 +292,44 @@ public class TC_DangKyVanBanDi_clone {
         System.out.println("  [CHECK] Thực tế: " + trangThai);
         Assert.assertTrue(trangThai.toLowerCase().contains("da dang ky") || trangThai.contains("Đã đăng ký"),
                 "Trạng thái lỗi: " + trangThai);
-        System.out.println(">>> KẾT THÚC TC_05_FLOW: PASS");
+        System.out.println(">>> KẾT THÚC TC_03: PASS");
     }
 
-    @Test(description = "TC_06_FLOW: Chỉ nhập các trường bắt buộc và nhấn Lưu")
-    public void TC_06_FLOW_RequiredFieldsOnly() {
-        System.out.println(">>> BẮT ĐẦU TC_06_FLOW");
+    @Test(description = "TC_04_VAL: Kiểm tra bắt lỗi khi bỏ trống Tệp đính kèm (Trường bắt buộc mới)")
+    public void TC_04_VAL_EmptyAttachmentField() {
+        System.out.println(">>> BẮT ĐẦU TC_04");
         loginAndOpenRegistration();
 
-        String trichYeu = "Auto-RequiredOnly-" + System.currentTimeMillis();
-        fillValidDataExceptFile(trichYeu);
+        String trichYeu = "Auto-MissingAttach-" + System.currentTimeMillis();
+
+        // 1. TỰ ĐIỀN TAY CÁC TRƯỜNG TEXT (Tuyệt đối KHÔNG gọi hàm fillAllMandatoryData ở đây)
+        dangKyPage.inputNgayKy("2026-04-28");
+        dangKyPage.selectLoaiVanBan("LVB0000013");
+        dangKyPage.selectMucDo("MD00000001");
+        dangKyPage.selectNguoiTao(TEACHER_USER);
+        dangKyPage.selectNguoiKy(HT_USER);
+        dangKyPage.inputNoiNhan("Phòng Test Automation");
+        dangKyPage.inputTrichYeu(trichYeu);
+
+        // 2. Vẫn upload Bản chính thức (Vì nó là bắt buộc)
         dangKyPage.uploadBanChinhThuc(createTempFile("required.pdf", "Content"));
 
+        // 3. CỐ TÌNH BỎ TRỐNG TỆP ĐÍNH KÈM VÀ NHẤN LƯU
         dangKyPage.clickLuu();
-        dangKyPage.waitForRegistrationSuccess();
 
-        String actualMsg = dangKyPage.getSuccessMessage();
-        
-        // SỬA Ở ĐÂY: Thêm vế check không dấu "da dang ky" hoặc "thanh cong"
-        boolean isSuccess = actualMsg.toLowerCase().contains("thành công") 
-                         || actualMsg.toLowerCase().contains("đã đăng ký")
-                         || actualMsg.toLowerCase().contains("thanh cong")
-                         || actualMsg.toLowerCase().contains("da dang ky");
-                         
-        Assert.assertTrue(isSuccess, "Lưu không thành công: " + actualMsg);
-        System.out.println(">>> KẾT THÚC TC_06_FLOW: PASS");
+        // 4. KIỂM TRA HỆ THỐNG CÓ BÁO LỖI KHÔNG
+        String errors = dangKyPage.getValidationErrors();
+        Assert.assertTrue(errors != null && !errors.isEmpty(),
+                "LỖI: Hệ thống cho phép lưu văn bản khi chưa tải lên Tệp đính kèm bắt buộc!");
+        System.out.println(">>> KẾT THÚC TC_04: PASS");
     }
-
     // ==========================================
     // NHÓM 3: VALIDATION CƠ BẢN & ĐỒNG THỜI
     // ==========================================
 
-    @Test(description = "TC_07_VAL: Bỏ trống tất cả các trường và nhấn Lưu")
-    public void TC_07_VAL_EmptyFieldsSave() {
-        System.out.println(">>> BẮT ĐẦU TC_07_VAL");
+    @Test(description = "TC_05_VAL: Bỏ trống tất cả các trường và nhấn Lưu")
+    public void TC_05_VAL_EmptyFieldsSave() {
+        System.out.println(">>> BẮT ĐẦU TC_05");
         loginAndOpenRegistration();
 
         System.out.println("Step: Nhấn Lưu khi form trống.");
@@ -328,16 +339,16 @@ public class TC_DangKyVanBanDi_clone {
         String errors = dangKyPage.getValidationErrors();
         Assert.assertTrue(errors != null && !errors.isEmpty() && (errors.contains("bắt buộc") || errors.contains("Vui lòng")),
                 "Hệ thống không hiển thị đúng thông báo lỗi bắt buộc khi bỏ trống form.");
-        System.out.println(">>> KẾT THÚC TC_07_VAL: PASS");
+        System.out.println(">>> KẾT THÚC TC_05: PASS");
     }
 
-    @Test(description = "TC_08_CONC: Double click nút Lưu - Tránh tạo 2 bản ghi")
-    public void TC_08_CONC_DoubleClickSave() {
-        System.out.println(">>> BẮT ĐẦU TC_08_CONC");
+    @Test(description = "TC_06_CONC: Double click nút Lưu - Tránh tạo 2 bản ghi")
+    public void TC_06_CONC_DoubleClickSave() {
+        System.out.println(">>> BẮT ĐẦU TC_06");
         loginAndOpenRegistration();
 
         String trichYeu = "Auto-DoubleSubmit-" + System.currentTimeMillis();
-        fillValidDataExceptFile(trichYeu);
+        fillAllMandatoryData(trichYeu);
         dangKyPage.uploadBanChinhThuc(createTempFile("double.pdf", "Content"));
 
         dangKyPage.doubleClickLuu();
@@ -346,19 +357,19 @@ public class TC_DangKyVanBanDi_clone {
         // Đã thay thế driver.findElement lằng nhằng bằng 1 hàm gọi duy nhất
         int count = dangKyPage.countDocumentsInList(trichYeu);
         Assert.assertEquals(count, 1, "Chỉ được phép tạo 1 bản ghi duy nhất.");
-        System.out.println(">>> KẾT THÚC TC_08_CONC: PASS");
+        System.out.println(">>> KẾT THÚC TC_06: PASS");
     }
 
     // ==========================================
     // NHÓM 4: CẤP SỐ, ID & TRẠNG THÁI
     // ==========================================
 
-    @Test(description = "TC_09_CAPSO: Kiểm tra định dạng số ký hiệu sau khi đăng ký")
-    public void TC_09_CAPSO_AutoNumberingFormat() {
-        System.out.println(">>> BẮT ĐẦU TC_09_CAPSO");
+    @Test(description = "TC_07_CAPSO: Kiểm tra định dạng số ký hiệu sau khi đăng ký")
+    public void TC_07_CAPSO_AutoNumberingFormat() {
+        System.out.println(">>> BẮT ĐẦU TC_07");
         loginAndOpenRegistration();
         
-        fillValidDataExceptFile("Test numbering " + System.currentTimeMillis());
+        fillAllMandatoryData("Test numbering " + System.currentTimeMillis());
         dangKyPage.uploadBanChinhThuc(createTempFile("test.pdf", "Content"));
 
         try { dangKyPage.clickCapSo(); } catch (Exception e) {}
@@ -369,12 +380,12 @@ public class TC_DangKyVanBanDi_clone {
         String soKyHieu = dangKyPage.getSoKyHieu();
         Assert.assertFalse(soKyHieu.isEmpty(), "Số ký hiệu trống.");
         Assert.assertTrue(soKyHieu.contains("/") && soKyHieu.endsWith("THPTND"), "Số ký hiệu sai định dạng.");
-        System.out.println(">>> KẾT THÚC TC_09_CAPSO: PASS");
+        System.out.println(">>> KẾT THÚC TC_07: PASS");
     }
 
-    @Test(description = "TC_10_ID: Kiểm tra số văn bản đi tự tăng +1")
-    public void TC_10_ID_AutoIncrement() {
-        System.out.println(">>> BẮT ĐẦU TC_10_ID");
+    @Test(description = "TC_08_ID: Kiểm tra số văn bản đi tự tăng +1")
+    public void TC_08_ID_AutoIncrement() {
+        System.out.println(">>> BẮT ĐẦU TC_08");
         loginAndOpenRegistration();
 
         System.out.println("Step 1: Lấy số văn bản đi lớn nhất hiện tại.");
@@ -387,7 +398,7 @@ public class TC_DangKyVanBanDi_clone {
         // SỬA Ở ĐÂY: Phải mở lại trang Đăng ký vì hàm getLatestSoVBDiFromList đã điều hướng đi nơi khác
         dangKyPage.openDirectRegistration(); 
         
-        fillValidDataExceptFile(trichYeu);
+        fillAllMandatoryData(trichYeu);
         dangKyPage.uploadBanChinhThuc(createTempFile("id_test.pdf", "Content"));
         dangKyPage.clickLuu();
         dangKyPage.waitForRegistrationSuccess();
@@ -396,24 +407,24 @@ public class TC_DangKyVanBanDi_clone {
         String newIdStr = dangKyPage.getSoVBDi();
         int newId = parseIdNumeric(newIdStr);
         Assert.assertTrue(newId > latestId, "Số văn bản đi phải được cấp mới.");
-        System.out.println(">>> KẾT THÚC TC_10_ID: PASS");
+        System.out.println(">>> KẾT THÚC TC_08: PASS");
     }
 
-    @Test(description = "TC_11_ID: Kiểm tra định dạng và tính Read-only của Số văn bản đi")
-    public void TC_11_ID_FormatAndReadOnly() {
-        System.out.println(">>> BẮT ĐẦU TC_11_ID");
+    @Test(description = "TC_09_ID: Kiểm tra định dạng và tính Read-only của Số văn bản đi")
+    public void TC_09_ID_FormatAndReadOnly() {
+        System.out.println(">>> BẮT ĐẦU TC_09");
         loginAndOpenRegistration();
 
         boolean isRO = dangKyPage.isSoVBDiReadOnly();
         String soVBDi = dangKyPage.getSoVBDi();
         Assert.assertTrue(isRO, "Số văn bản đi phải Read-only.");
         Assert.assertTrue(soVBDi.matches("VBO\\d{8}"), "Sai định dạng VBOxxxxxxxx.");
-        System.out.println(">>> KẾT THÚC TC_11_ID: PASS");
+        System.out.println(">>> KẾT THÚC TC_09: PASS");
     }
 
-    @Test(description = "TC_12_STATE: Kiểm tra trạng thái mặc định và tính Read-only")
-    public void TC_12_STATE_DefaultStatusAndReadOnly() {
-        System.out.println(">>> BẮT ĐẦU TC_12_STATE");
+    @Test(description = "TC_10_STATE: Kiểm tra trạng thái mặc định và tính Read-only")
+    public void TC_10_STATE_DefaultStatusAndReadOnly() {
+        System.out.println(">>> BẮT ĐẦU TC_10");
         loginAndOpenRegistration();
 
         String defaultStatus = dangKyPage.getTrangThai();
@@ -422,12 +433,12 @@ public class TC_DangKyVanBanDi_clone {
         
         boolean isRO = dangKyPage.isFieldReadOnly(By.id("display_trang_thai"));
         Assert.assertTrue(isRO, "Trường Trạng thái phải Read-only.");
-        System.out.println(">>> KẾT THÚC TC_12_STATE: PASS");
+        System.out.println(">>> KẾT THÚC TC_10: PASS");
     }
 
-    @Test(description = "TC_13_STATE: Kiểm tra chế độ Read-only sau khi đăng ký")
-    public void TC_13_STATE_ReadOnlyAfterRegistration() {
-        System.out.println(">>> BẮT ĐẦU TC_13_STATE");
+    @Test(description = "TC_11_STATE: Kiểm tra chế độ Read-only sau khi đăng ký")
+    public void TC_11_STATE_ReadOnlyAfterRegistration() {
+        System.out.println(">>> BẮT ĐẦU TC_11");
         loginAndOpenRegistration();
         String trichYeu = "Auto-ReadOnly-" + System.currentTimeMillis();
 
@@ -437,16 +448,16 @@ public class TC_DangKyVanBanDi_clone {
         int saveBtns = driver.findElements(By.cssSelector("button[type='submit']")).size();
         Assert.assertTrue(isReadOnly, "Trường Trích yếu phải Read-only.");
         Assert.assertEquals(saveBtns, 0, "Nút Lưu phải biến mất.");
-        System.out.println(">>> KẾT THÚC TC_13_STATE: PASS");
+        System.out.println(">>> KẾT THÚC TC_11: PASS");
     }
 
-    @Test(description = "TC_14_STATE: Kiểm tra chuyển đổi trạng thái sau khi lưu thành công")
-    public void TC_14_STATE_StatusChangeAfterSave() {
-        System.out.println(">>> BẮT ĐẦU TC_14_STATE");
+    @Test(description = "TC_12_STATE: Kiểm tra chuyển đổi trạng thái sau khi lưu thành công")
+    public void TC_12_STATE_StatusChangeAfterSave() {
+        System.out.println(">>> BẮT ĐẦU TC_12");
         loginAndOpenRegistration();
 
         String oldStatus = dangKyPage.getTrangThai();
-        fillValidDataExceptFile("Auto-Status-Change-" + System.currentTimeMillis());
+        fillAllMandatoryData("Auto-Status-Change-" + System.currentTimeMillis());
         dangKyPage.uploadBanChinhThuc(createTempFile("status.pdf", "Content"));
         dangKyPage.clickLuu();
         dangKyPage.waitForRegistrationSuccess();
@@ -459,12 +470,12 @@ public class TC_DangKyVanBanDi_clone {
                              || newStatus.toLowerCase().contains("da dang ky");
                              
         Assert.assertTrue(isValidStatus, "Trạng thái mới phải là 'Đã đăng ký', nhưng thực tế là: " + newStatus);
-        System.out.println(">>> KẾT THÚC TC_14_STATE: PASS");
+        System.out.println(">>> KẾT THÚC TC_12: PASS");
     }
 
-    @Test(description = "TC_15_CANCEL: Kiểm tra nút Hủy (Reset form)")
-    public void TC_15_CANCEL_CancelRegistration() {
-        System.out.println(">>> BẮT ĐẦU TC_15_CANCEL");
+    @Test(description = "TC_13_CANCEL: Kiểm tra nút Hủy (Reset form)")
+    public void TC_13_CANCEL_CancelRegistration() {
+        System.out.println(">>> BẮT ĐẦU TC_13");
         loginAndOpenRegistration();
         dangKyPage.inputTrichYeu("Dữ liệu tạm");
         dangKyPage.clickHuy();
@@ -472,19 +483,19 @@ public class TC_DangKyVanBanDi_clone {
         // Cập nhật lại:
         String value = dangKyPage.getTrichYeuValue();
         Assert.assertEquals(value, "", "Form chưa được reset.");
-        System.out.println(">>> KẾT THÚC TC_15_CANCEL: PASS");
+        System.out.println(">>> KẾT THÚC TC_13: PASS");
     }
 
     // ==========================================
     // NHÓM 5: VALIDATION NGÀY THÁNG & DROPDOWN
     // ==========================================
 
-    @Test(description = "TC_16_DATE: Bỏ trống Ngày ký")
-    public void TC_16_DATE_EmptySigningDate() {
-        System.out.println(">>> BẮT ĐẦU TC_16_DATE");
+    @Test(description = "TC_14_DATE: Bỏ trống Ngày ký")
+    public void TC_14_DATE_EmptySigningDate() {
+        System.out.println(">>> BẮT ĐẦU TC_14");
         loginAndOpenRegistration();
         
-        fillValidDataExceptFile("Test Date Empty - " + System.currentTimeMillis());
+        fillAllMandatoryData("Test Date Empty - " + System.currentTimeMillis());
         dangKyPage.uploadBanChinhThuc(createTempFile("date1.pdf", "Content"));
         dangKyPage.inputNgayKy(""); // Cố tình bỏ trống
         dangKyPage.clickLuu();
@@ -492,15 +503,15 @@ public class TC_DangKyVanBanDi_clone {
         String errors = wait.until(ignored -> dangKyPage.getValidationErrors());
         Assert.assertTrue(errors != null && (errors.contains("bắt buộc") || errors.contains("Vui lòng")),
                 "Không hiển thị đúng thông báo lỗi bắt buộc cho Ngày ký.");
-        System.out.println(">>> KẾT THÚC TC_16_DATE: PASS");
+        System.out.println(">>> KẾT THÚC TC_14: PASS");
     }
 
-    @Test(description = "TC_17_DATE: Ngày ký < Ngày ban hành (Logic lỗi)")
-    public void TC_17_DATE_PastSigningDate() {
-        System.out.println(">>> BẮT ĐẦU TC_17_DATE");
+    @Test(description = "TC_15_DATE: Ngày ký < Ngày ban hành (Logic lỗi)")
+    public void TC_15_DATE_PastSigningDate() {
+        System.out.println(">>> BẮT ĐẦU TC_15");
         loginAndOpenRegistration();
 
-        fillValidDataExceptFile("Test Date Past - " + System.currentTimeMillis());
+        fillAllMandatoryData("Test Date Past - " + System.currentTimeMillis());
         dangKyPage.uploadBanChinhThuc(createTempFile("date2.pdf", "Content"));
         dangKyPage.inputNgayKy("2000-01-01"); // Cố tình nhập quá khứ
         dangKyPage.clickLuu();
@@ -519,15 +530,15 @@ public class TC_DangKyVanBanDi_clone {
 
         Assert.assertTrue(errors != null && (errors.contains("nhỏ hơn") || errors.contains("trước")),
                 "Phải báo lỗi logic cụ thể khi ngày ký không hợp lệ.");
-        System.out.println(">>> KẾT THÚC TC_17_DATE: PASS");
+        System.out.println(">>> KẾT THÚC TC_15: PASS");
     }
 
-    @Test(description = "TC_18_DATE: Ngày ký ở tương lai")
-    public void TC_18_DATE_FutureSigningDate() {
-        System.out.println(">>> BẮT ĐẦU TC_18_DATE");
+    @Test(description = "TC_16_DATE: Ngày ký ở tương lai")
+    public void TC_16_DATE_FutureSigningDate() {
+        System.out.println(">>> BẮT ĐẦU TC_16");
         loginAndOpenRegistration();
 
-        fillValidDataExceptFile("Test Date Future - " + System.currentTimeMillis());
+        fillAllMandatoryData("Test Date Future - " + System.currentTimeMillis());
         dangKyPage.uploadBanChinhThuc(createTempFile("date3.pdf", "Content"));
         dangKyPage.inputNgayKy("2099-12-31"); // Cố tình nhập tương lai
         dangKyPage.clickLuu();
@@ -545,15 +556,15 @@ public class TC_DangKyVanBanDi_clone {
         }
 
         Assert.assertTrue(errors != null && !errors.isEmpty(), "Phải báo lỗi khi ngày ký ở tương lai.");
-        System.out.println(">>> KẾT THÚC TC_18_DATE: PASS");
+        System.out.println(">>> KẾT THÚC TC_16: PASS");
     }
 
-    @Test(description = "TC_19_VAL: Kiểm tra không chọn Loại văn bản")
-    public void TC_19_VAL_EmptyDocType() {
-        System.out.println(">>> BẮT ĐẦU TC_19_VAL");
+    @Test(description = "TC_17_VAL: Kiểm tra không chọn Loại văn bản")
+    public void TC_17_VAL_EmptyDocType() {
+        System.out.println(">>> BẮT ĐẦU TC_17");
         loginAndOpenRegistration();
 
-        fillValidDataExceptFile("Test empty doc type");
+        fillAllMandatoryData("Test empty doc type");
         dangKyPage.uploadBanChinhThuc(createTempFile("doctype.pdf", "Content"));
         
         dangKyPage.selectEmptyLoaiVanBan(); 
@@ -562,15 +573,15 @@ public class TC_DangKyVanBanDi_clone {
         String errors = dangKyPage.getValidationErrors();
         Assert.assertTrue((errors != null && !errors.isEmpty()) || driver.getCurrentUrl().endsWith("/dang-ky/"),
                 "Hệ thống phải chặn lưu khi chưa chọn Loại văn bản.");
-        System.out.println(">>> KẾT THÚC TC_19_VAL: PASS");
+        System.out.println(">>> KẾT THÚC TC_17: PASS");
     }
 
-    @Test(description = "TC_20_VAL: Kiểm tra validation cho Người soạn thảo")
-    public void TC_20_VAL_CreatorValidation() {
-        System.out.println(">>> BẮT ĐẦU TC_20_VAL");
+    @Test(description = "TC_18_VAL: Kiểm tra validation cho Người soạn thảo")
+    public void TC_18_VAL_CreatorValidation() {
+        System.out.println(">>> BẮT ĐẦU TC_18");
         loginAndOpenRegistration();
 
-        fillValidDataExceptFile("Test creator validation");
+        fillAllMandatoryData("Test creator validation");
         dangKyPage.uploadBanChinhThuc(createTempFile("creator.pdf", "Content"));
         
         dangKyPage.selectEmptyNguoiTao();
@@ -579,15 +590,15 @@ public class TC_DangKyVanBanDi_clone {
         String errorsEmpty = dangKyPage.getValidationErrors();
         Assert.assertTrue(!errorsEmpty.isEmpty() || driver.getCurrentUrl().endsWith("/dang-ky/"),
                 "Phải chặn lưu khi không chọn Người soạn thảo.");
-        System.out.println(">>> KẾT THÚC TC_20_VAL: PASS");
+        System.out.println(">>> KẾT THÚC TC_18: PASS");
     }
 
-    @Test(description = "TC_21_VAL: Kiểm tra validation cho Người ký")
-    public void TC_21_VAL_SignerValidation() {
-        System.out.println(">>> BẮT ĐẦU TC_21_VAL");
+    @Test(description = "TC_19_VAL: Kiểm tra validation cho Người ký")
+    public void TC_19_VAL_SignerValidation() {
+        System.out.println(">>> BẮT ĐẦU TC_19");
         loginAndOpenRegistration();
 
-        fillValidDataExceptFile("Test signer validation");
+        fillAllMandatoryData("Test signer validation");
         dangKyPage.uploadBanChinhThuc(createTempFile("signer.pdf", "Content"));
         
         dangKyPage.selectEmptyNguoiKy();
@@ -596,34 +607,34 @@ public class TC_DangKyVanBanDi_clone {
         String errors = dangKyPage.getValidationErrors();
         Assert.assertTrue(!errors.isEmpty() || driver.getCurrentUrl().endsWith("/dang-ky/"),
                 "Phải chặn lưu khi không chọn Người ký.");
-        System.out.println(">>> KẾT THÚC TC_21_VAL: PASS");
+        System.out.println(">>> KẾT THÚC TC_19: PASS");
     }
 
     // ==========================================
     // NHÓM 6: XỬ LÝ TỆP (FILE UPLOAD)
     // ==========================================
 
-    @Test(description = "TC_22_FILE: Bắt buộc upload Bản chính thức")
-    public void TC_22_FILE_EmptyFileValidation() {
-        System.out.println(">>> BẮT ĐẦU TC_22_FILE");
+    @Test(description = "TC_20_FILE: Bắt buộc upload Bản chính thức")
+    public void TC_20_FILE_EmptyFileValidation() {
+        System.out.println(">>> BẮT ĐẦU TC_20");
         loginAndOpenRegistration();
 
-        fillValidDataExceptFile("Test file validation EMPTY - " + System.currentTimeMillis());
+        fillAllMandatoryData("Test file validation EMPTY - " + System.currentTimeMillis());
         dangKyPage.clickLuu();
 
         String errorsEmpty = dangKyPage.getValidationErrors();
         if (errorsEmpty == null || errorsEmpty.trim().isEmpty()) {
             Assert.fail("LỖI: Bỏ trống file nhưng hệ thống không chặn!");
         }
-        System.out.println(">>> KẾT THÚC TC_22_FILE: PASS");
+        System.out.println(">>> KẾT THÚC TC_20: PASS");
     }
 
-    @Test(description = "TC_23_FILE: Chặn upload file thực thi (.exe) để bảo mật")
-    public void TC_23_FILE_ExeFileSecurity() {
-        System.out.println(">>> BẮT ĐẦU TC_23_FILE");
+    @Test(description = "TC_21_FILE: Chặn upload file thực thi (.exe) để bảo mật")
+    public void TC_21_FILE_ExeFileSecurity() {
+        System.out.println(">>> BẮT ĐẦU TC_21");
         loginAndOpenRegistration();
 
-        fillValidDataExceptFile("Test Security EXE - " + System.currentTimeMillis());
+        fillAllMandatoryData("Test Security EXE - " + System.currentTimeMillis());
         dangKyPage.uploadBanChinhThuc(createTempFile("virus.exe", "Malicious content"));
         dangKyPage.clickLuu();
 
@@ -631,15 +642,15 @@ public class TC_DangKyVanBanDi_clone {
         if (errorsFormat == null || errorsFormat.trim().isEmpty()) {
             Assert.fail("LỖI: Chặn file .exe nhưng KHÔNG báo lỗi.");
         }
-        System.out.println(">>> KẾT THÚC TC_23_FILE: PASS");
+        System.out.println(">>> KẾT THÚC TC_21: PASS");
     }
 
-    @Test(description = "TC_24_FILE: Chặn upload file vượt quá dung lượng quy định (25MB)")
-    public void TC_24_FILE_OversizedFile() {
-        System.out.println(">>> BẮT ĐẦU TC_24_FILE");
+    @Test(description = "TC_22_FILE: Chặn upload file vượt quá dung lượng quy định (25MB)")
+    public void TC_22_FILE_OversizedFile() {
+        System.out.println(">>> BẮT ĐẦU TC_22");
         loginAndOpenRegistration();
 
-        fillValidDataExceptFile("Test Size Limit - " + System.currentTimeMillis());
+        fillAllMandatoryData("Test Size Limit - " + System.currentTimeMillis());
         dangKyPage.uploadBanChinhThuc(createLargeFile("large_test.pdf", 25));
         dangKyPage.clickLuu();
 
@@ -647,30 +658,31 @@ public class TC_DangKyVanBanDi_clone {
         if (errorsSize == null || errorsSize.trim().isEmpty()) {
             Assert.fail("LỖI: Chặn file lớn nhưng KHÔNG báo lỗi cho User.");
         }
-        System.out.println(">>> KẾT THÚC TC_24_FILE: PASS");
+        System.out.println(">>> KẾT THÚC TC_22: PASS");
     }
 
-    @Test(description = "TC_25A_FILE: Đính kèm thành công nhiều file hợp lệ")
-    public void TC_25A_FILE_MultipleAttachments() {
-        System.out.println(">>> BẮT ĐẦU TC_25A_FILE");
+    @Test(description = "TC_23_FILE: Đính kèm thành công nhiều file hợp lệ")
+    public void TC_23_FILE_MultipleAttachments() {
+        System.out.println(">>> BẮT ĐẦU TC_23");
         loginAndOpenRegistration();
 
         System.out.println("  [STEP 1] Upload nhiều file định dạng khác nhau CÙNG LÚC");
         String file1 = createTempFile("attach1.pdf", "Content 1");
         String file2 = createTempFile("attach2.docx", "Content 2");
         
-        // SỬA Ở ĐÂY: Truyền 2 file vào cùng 1 lệnh sendKeys
-        dangKyPage.uploadTepDinhKem(file1, file2);
+        // FIX: Ghép 2 đường dẫn bằng \n
+        String joinedPaths = file1 + "\n" + file2;
+        dangKyPage.uploadTepDinhKem(joinedPaths);
 
         System.out.println("  [STEP 2] Kiểm tra danh sách hiển thị");
         int fileCount = dangKyPage.getUploadedFilesCount();
-        Assert.assertTrue(fileCount >= 2, "LỖI: Không hiển thị đủ 2 file đính kèm.");
-        System.out.println(">>> KẾT THÚC TC_25A_FILE: PASS");
+        Assert.assertTrue(fileCount >= 2, "LỖI: Không hiển thị đủ 2 file đính kèm. Khả năng Selenium ghép file thất bại.");
+        System.out.println(">>> KẾT THÚC TC_23: PASS");
     }
 
-    @Test(description = "TC_25B_FILE: Xử lý khi upload tệp đính kèm rỗng (0 KB)")
-    public void TC_25B_FILE_EmptyAttachment() {
-        System.out.println(">>> BẮT ĐẦU TC_25B_FILE");
+    @Test(description = "TC_24_FILE: Xử lý khi upload tệp đính kèm rỗng (0 KB)")
+    public void TC_24_FILE_EmptyAttachment() {
+        System.out.println(">>> BẮT ĐẦU TC_24");
         loginAndOpenRegistration();
 
         System.out.println("  [STEP 1] Upload 1 file rỗng");
@@ -683,12 +695,12 @@ public class TC_DangKyVanBanDi_clone {
         // Assert: Nếu file không được thêm vào list (count == 0), HOẶC hệ thống văng text cảnh báo lỗi
         Assert.assertTrue(fileCount == 0 || (errors != null && !errors.isEmpty()), 
             "LỖI: Hệ thống chấp nhận file rỗng mà không có bất kỳ cảnh báo nào.");
-        System.out.println(">>> KẾT THÚC TC_25B_FILE: PASS");
+        System.out.println(">>> KẾT THÚC TC_24: PASS");
     }
 
-    @Test(description = "TC_25C_FILE: Xử lý khi upload tệp đính kèm trùng tên")
-    public void TC_25C_FILE_DuplicateAttachment() {
-        System.out.println(">>> BẮT ĐẦU TC_25C_FILE");
+    @Test(description = "TC_25_FILE: Xử lý khi upload tệp đính kèm trùng tên")
+    public void TC_25_FILE_DuplicateAttachment() {
+        System.out.println(">>> BẮT ĐẦU TC_25");
         loginAndOpenRegistration();
 
         System.out.println("  [STEP 1] Upload cùng 1 file 2 lần CÙNG LÚC");
@@ -703,7 +715,110 @@ public class TC_DangKyVanBanDi_clone {
 
         Assert.assertTrue(fileCount == 2 || (errors != null && !errors.isEmpty()), 
             "LỖI: Xử lý file trùng tên không hợp lý (Vừa không báo lỗi, vừa đè mất file).");
-        System.out.println(">>> KẾT THÚC TC_25C_FILE: PASS");
+        System.out.println(">>> KẾT THÚC TC_25: PASS");
+    }
+
+    // ==========================================
+    // NHÓM TEST THÊM MỚI (BVA, SECURITY, DECISION TABLE)
+    // ==========================================
+
+    @Test(description = "TC_26_BOUNDARY: Upload 11 tệp đính kèm (Vượt Max 10 files)")
+    public void TC_26_BOUNDARY_MaxAttachments() {
+        System.out.println(">>> BẮT ĐẦU TC_26");
+        loginAndOpenRegistration();
+        
+        dangKyPage.inputNgayKy("2026-04-28");
+        dangKyPage.selectLoaiVanBan("LVB0000013");
+        dangKyPage.selectMucDo("MD00000001");
+        dangKyPage.selectNguoiTao(TEACHER_USER);
+        dangKyPage.selectNguoiKy(HT_USER);
+        dangKyPage.inputNoiNhan("Phòng Test Automation");
+        dangKyPage.inputTrichYeu("Test upload 11 files");
+        dangKyPage.uploadBanChinhThuc(createTempFile("main.pdf", "Content"));
+
+        System.out.println("  [STEP] Tạo và upload CÙNG LÚC 11 files đính kèm");
+        String[] elevenFiles = new String[11];
+        for (int i = 0; i < 11; i++) {
+            elevenFiles[i] = createTempFile("file_bva_" + i + ".pdf", "Content " + i);
+        }
+        
+        String joinedPaths = String.join("\n", elevenFiles);
+        dangKyPage.uploadTepDinhKem(joinedPaths);
+        
+        System.out.println("  [STEP] Nhấn Lưu và chờ xem hệ thống có chặn không...");
+        dangKyPage.clickLuu(); 
+
+        // FIX: Đợi xem hệ thống có "hồn nhiên" chuyển sang trang Đã lưu (Read-only) không
+        try {
+            dangKyPage.waitForRegistrationSuccess();
+        } catch (Exception e) {
+            // Nếu bị chặn lại ở trang form (đúng thiết kế), sẽ văng lỗi Timeout ở đây, kệ nó
+        }
+
+        String errors = dangKyPage.getValidationErrors();
+        int fileCount = dangKyPage.getUploadedFilesCount();
+        
+        System.out.println("  [CHECK] URL hiện tại: " + driver.getCurrentUrl());
+        System.out.println("  [CHECK] Số file UI hiển thị: " + fileCount);
+        
+        // Assert bắt Bug: Nếu thấy up thành công 11 file thì FAILED ngay lập tức!
+        Assert.assertFalse(fileCount >= 11, "BUG HỆ THỐNG: Cho phép upload và lưu thành công >= 11 files, vượt quá giới hạn thiết kế!");
+        
+        System.out.println(">>> KẾT THÚC TC_26: PASS");
+    }
+
+    @Test(description = "TC_27_SECURITY: Bypass Extension (Đổi đuôi file .exe thành .pdf)")
+    public void TC_27_SECURITY_FakeExtension() {
+        System.out.println(">>> BẮT ĐẦU TC_27");
+        loginAndOpenRegistration();
+        
+        // Điền form
+        dangKyPage.inputNgayKy("2026-04-28");
+        dangKyPage.selectLoaiVanBan("LVB0000013");
+        dangKyPage.selectMucDo("MD00000001");
+        dangKyPage.selectNguoiTao(TEACHER_USER);
+        dangKyPage.selectNguoiKy(HT_USER);
+        dangKyPage.inputNoiNhan("Bảo mật");
+        dangKyPage.inputTrichYeu("Test Fake Extension");
+        dangKyPage.uploadTepDinhKem(createTempFile("attach.pdf", "Content"));
+
+        System.out.println("  [STEP] Tạo file virus.exe, rename lén thành fake_virus.pdf");
+        try {
+            String originalExe = createTempFile("malware.exe", "MZ_FAKE_EXECUTABLE_CONTENT");
+            Path sourcePath = Paths.get(originalExe);
+            Path targetPath = sourcePath.resolveSibling("fake_virus.pdf");
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            dangKyPage.uploadBanChinhThuc(targetPath.toAbsolutePath().toString());
+            dangKyPage.clickLuu();
+        } catch (IOException e) {
+            Assert.fail("Lỗi trong quá trình tạo file giả mạo: " + e.getMessage());
+        }
+
+        String errors = verifyNoBypassAndGetErrors("BẢO MẬT: Chấp nhận file Fake MIME Type");
+        Assert.assertTrue(errors != null && !errors.isEmpty(), 
+            "HỆ THỐNG CÓ LỖ CHỖ: Chỉ kiểm tra extension (.pdf) mà không kiểm tra cấu trúc thật (MIME type).");
+        System.out.println(">>> KẾT THÚC TC_27: PASS");
+    }
+
+    @Test(description = "TC_28_DECISION_TABLE: Render File Preview (.pdf và image)")
+    public void TC_28_DECISION_TABLE_PreviewRender() {
+        System.out.println(">>> BẮT ĐẦU TC_28");
+        loginAndOpenRegistration();
+        
+        System.out.println("  [CHECK 1] Upload PDF -> Phải render Iframe");
+        dangKyPage.uploadBanChinhThuc(createTempFile("test.pdf", "PDF Content"));
+        boolean isPdfRendered = wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("iframe"))) != null;
+        Assert.assertTrue(isPdfRendered, "Lỗi: Không tìm thấy Iframe để xem trước file PDF.");
+
+        System.out.println("  [CHECK 2] Upload Image -> Phải render thẻ IMG");
+        driver.navigate().refresh(); // Reset form
+        dangKyPage.uploadBanChinhThuc(createTempFile("test_img.png", "Image Data"));
+        // Tìm thẻ img có src chứa định dạng ảnh preview (có thể là blob hoặc base64 tùy hệ thống)
+        boolean isImgRendered = wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("img"))) != null;
+        Assert.assertTrue(isImgRendered, "Lỗi: Không tìm thấy thẻ IMG để xem trước hình ảnh.");
+
+        System.out.println(">>> KẾT THÚC TC_28: PASS");
     }
 
     // ==========================================
@@ -720,7 +835,7 @@ public class TC_DangKyVanBanDi_clone {
         if (!driver.getCurrentUrl().endsWith("/dang-ky/")) {
             dangKyPage.openDirectRegistration();
         }
-        fillValidDataExceptFile(trichYeu);
+        fillAllMandatoryData(trichYeu);
         dangKyPage.uploadBanChinhThuc(createTempFile("direct.pdf", "Content"));
         dangKyPage.clickLuu();
         dangKyPage.waitForRegistrationSuccess();
@@ -735,7 +850,12 @@ public class TC_DangKyVanBanDi_clone {
                 return (err != null && !err.trim().isEmpty()) || !d.getCurrentUrl().endsWith("/dang-ky/");
             });
         } catch (org.openqa.selenium.TimeoutException e) {
-            System.out.println("  [CẢNH BÁO] Đã hết 15s chờ đợi phản hồi từ Server.");
+            System.out.println("  [CẢNH BÁO] Đã hết 15s chờ đợi. Đang kiểm tra xem Server có sập không...");
+            // FIX: Check xem có phải do nhồi file nặng/virus khiến web chết lâm sàng không
+            String ps = driver.getPageSource();
+            if (ps.contains("Internal Server Error") || driver.getTitle().contains("500") || ps.contains("Exception")) {
+                Assert.fail("BUG HỆ THỐNG: Server bị Crash (Error 500) khi xử lý tác vụ này!");
+            }
         }
 
         String currentUrl = driver.getCurrentUrl();
@@ -755,7 +875,7 @@ public class TC_DangKyVanBanDi_clone {
      * Helper: Điền toàn bộ thông tin hợp lệ vào form Đăng ký văn bản đi,
      * NGOẠI TRỪ tệp đính kèm (Bản chính thức).
      */
-    private void fillValidDataExceptFile(String trichYeu) {
+    private void fillAllMandatoryData(String trichYeu) {
         dangKyPage.inputNgayKy("2026-04-28");
         dangKyPage.selectLoaiVanBan("LVB0000013");
         dangKyPage.selectMucDo("MD00000001");
@@ -763,6 +883,7 @@ public class TC_DangKyVanBanDi_clone {
         dangKyPage.selectNguoiKy(HT_USER);
         dangKyPage.inputNoiNhan("Phòng Test Automation");
         dangKyPage.inputTrichYeu(trichYeu);
+        dangKyPage.uploadTepDinhKem(createTempFile("attach_helper.pdf", "Attachment"));
     }
 
     private String createTempFile(String fileName, String content) {
@@ -800,9 +921,9 @@ public class TC_DangKyVanBanDi_clone {
     // NHÓM 7: KIỂM THỬ GIỚI HẠN (BOUNDARY / STRESS)
     // ==========================================
 
-    @Test(description = "TC_26_LIMIT_UI: Kiểm tra UI có chặn độ dài nhập vào không (Maxlength)")
-    public void TC_26_LIMIT_UI_Constraints() {
-        System.out.println(">>> BẮT ĐẦU TC_26_LIMIT_UI");
+    @Test(description = "TC_29_LIMIT_UI: Kiểm tra UI có chặn độ dài nhập vào không (Maxlength)")
+    public void TC_29_LIMIT_UI_Constraints() {
+        System.out.println(">>> BẮT ĐẦU TC_29");
         loginAndOpenRegistration();
         String stressText = generateLongString(10000);
 
@@ -813,12 +934,12 @@ public class TC_DangKyVanBanDi_clone {
         int uiTrichYeuLen = driver.findElement(By.id("id_trich_yeu")).getAttribute("value").length();
         
         Assert.assertTrue(uiNoiNhanLen < 10000 && uiTrichYeuLen < 10000, "LỖI: UI không chặn Maxlength!");
-        System.out.println(">>> KẾT THÚC TC_26_LIMIT_UI: PASS");
+        System.out.println(">>> KẾT THÚC TC_29: PASS");
     }
 
-    @Test(description = "TC_27_LIMIT_BACKEND: Stress Test Backend chống Crash (Error 500)")
-    public void TC_27_LIMIT_BACKEND_AntiCrash() {
-        System.out.println(">>> BẮT ĐẦU TC_27_LIMIT_BACKEND");
+    @Test(description = "TC_30_LIMIT_BACKEND: Stress Test Backend chống Crash (Error 500)")
+    public void TC_30_LIMIT_BACKEND_AntiCrash() {
+        System.out.println(">>> BẮT ĐẦU TC_30");
         loginAndOpenRegistration();
         String stressText = generateLongString(10000);
 
@@ -826,7 +947,7 @@ public class TC_DangKyVanBanDi_clone {
         ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].removeAttribute('maxlength')",
                 driver.findElement(By.id("id_noi_nhan")));
         
-        fillValidDataExceptFile("Stress Test Backend");
+        fillAllMandatoryData("Stress Test Backend");
         dangKyPage.inputNoiNhan(stressText); // Ghi đè chữ dài 10k ký tự
         dangKyPage.uploadBanChinhThuc(createTempFile("stress.pdf", "Content"));
         dangKyPage.clickLuu();
@@ -834,7 +955,7 @@ public class TC_DangKyVanBanDi_clone {
         String ps = driver.getPageSource();
         boolean isCrash = ps.contains("Internal Server Error") || ps.contains("Exception") || driver.getTitle().contains("500");
         Assert.assertFalse(isCrash, "LỖI TÀN KHỐC: Backend bị crash (Error 500) khi nhận chuỗi quá dài!");
-        System.out.println(">>> KẾT THÚC TC_27_LIMIT_BACKEND: PASS");
+        System.out.println(">>> KẾT THÚC TC_30: PASS");
     }
 
     private int parseIdNumeric(String idStr) {

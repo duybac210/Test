@@ -429,9 +429,11 @@ public class ManHinhDangKyVanBanDi {
 
     /** Dành cho TC_25_FILE: Đếm số lượng tệp đính kèm đã hiển thị thành công */
     public int getUploadedFilesCount() {
-        // Đợi 1 chút để DOM cập nhật thay vì phải viết vòng lặp for bên file Test
         try { Thread.sleep(1000); } catch (InterruptedException ignored) {} 
-        List<WebElement> files = driver.findElements(By.cssSelector(".file-item, .attachment-name, .file-list li, .text-primary, .uploaded-file"));
+        
+        // Sửa lại CSS Selector để trúng 100% các file hiển thị ở cả trang nhập và trang Read-only
+        List<WebElement> files = driver.findElements(By.cssSelector(".existing-attachments a, .attachment-item"));
+        
         return files.size();
     }
 }
