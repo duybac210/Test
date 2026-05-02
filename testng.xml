@@ -6,6 +6,7 @@
             <class name="testcases.vanbandenlist_test"/>
             <class name="testcases.TC_DangKyVanBanDenTest"/>
             <class name="testcases.TC_DKVanBanDi"/>
+            <class name="testcases.XemVBDiTest"/>
         </classes>
     </test>
 </suite>
