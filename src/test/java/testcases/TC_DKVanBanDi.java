@@ -44,8 +44,13 @@ public class TC_DKVanBanDi {
 
     @AfterMethod
     public void tearDown() {
-        Utilities.logout();
-        Utilities.quitDriver();
+        try {
+            Utilities.logout();
+        } catch (Exception e) {
+            System.out.println("Cảnh báo: Không thể logout (có thể trình duyệt đã đóng).");
+        } finally {
+            Utilities.quitDriver();
+        }
     }
 
     /** Tạo văn bản đi từ dự thảo (Giáo viên tạo) và trả về trích yếu unique. */
@@ -859,14 +864,16 @@ public class TC_DKVanBanDi {
         }
 
         String currentUrl = driver.getCurrentUrl();
-        String actualMsg = dangKyPage.getSuccessMessage();
+        String actualMsg = dangKyPage.getSuccessMessage().toLowerCase();
         
         boolean isBypassed = !currentUrl.endsWith("/dang-ky/") 
-                || actualMsg.toLowerCase().contains("thành công") 
-                || actualMsg.toLowerCase().contains("đã đăng ký");
+                || actualMsg.contains("thành công") 
+                || actualMsg.contains("thanh cong")
+                || actualMsg.contains("đã đăng ký") 
+                || actualMsg.contains("da dang ky");
 
         if (isBypassed) {
-            Assert.fail("BUG " + failMessage + "! Hệ thống báo: '" + actualMsg + "' | URL: " + currentUrl);
+            Assert.fail("BUG " + failMessage + "! Hệ thống cho phép lưu thành công mặc dù dữ liệu không hợp lệ. Thông báo ghi nhận: '" + actualMsg + "' | URL: " + currentUrl);
         }
         return dangKyPage.getValidationErrors();
     }
